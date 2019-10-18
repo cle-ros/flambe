@@ -29,6 +29,7 @@ class RNNEncoder(Module):
                  hidden_size: int,
                  n_layers: int = 1,
                  rnn_type: str = 'lstm',
+                 sru_activation: Optional[str] = None,
                  dropout: float = 0,
                  bidirectional: bool = False,
                  layer_norm: bool = False,
@@ -75,6 +76,9 @@ class RNNEncoder(Module):
         self.hidden_size = hidden_size
         self.enforce_sorted = enforce_sorted
         if rnn_type in ['lstm', 'gru']:
+            if sru_activation:
+                raise ValueError("'sru_activation' parameter only available when rnn_type is 'sru'")
+
             rnn_fn = nn.LSTM if rnn_type == 'lstm' else nn.GRU
             self.rnn = rnn_fn(input_size=input_size,
                               hidden_size=hidden_size,
@@ -82,6 +86,13 @@ class RNNEncoder(Module):
                               dropout=dropout,
                               bidirectional=bidirectional)
         elif rnn_type == 'sru':
+            if sru_activation:
+                if sru_activation not in ['tanh', 'relu', 'selu']:
+                    raise ValueError(f"'{sru_activation}' not a valid SRU activation function. " +
+                                     "Only 'tanh', 'relu' and 'selu' are supported")
+
+                activation = {f'use_{sru_activation}': True}
+
             from sru import SRU
             self.rnn = SRU(input_size,
                            hidden_size,
@@ -90,7 +101,8 @@ class RNNEncoder(Module):
                            bidirectional=bidirectional,
                            layer_norm=layer_norm,
                            rescale=rescale,
-                           highway_bias=highway_bias)
+                           highway_bias=highway_bias,
+                           **activation)
         else:
             raise ValueError(f"Unkown rnn type: {rnn_type}, use of of: gru, sru, lstm")
 
