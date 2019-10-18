@@ -49,6 +49,10 @@ class RNNEncoder(Module):
         rnn_type : str, optional
            The type of rnn cell, one of: `lstm`, `gru`, `sru`
            defaults to `lstm`
+        sru_activation : str, optional
+            The activation function when using SRU. Current options
+            are 'tanh', 'relu' and 'selu'. By default, no activation
+            function is used.
         dropout : float, optional
             Amount of dropout to use between RNN layers, defaults to 0
         bidirectional : bool, optional
