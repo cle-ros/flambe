@@ -11,7 +11,7 @@ def test_pipeline_call():
         m.return_value = 'test'
         transformations.append(m)
 
-    tokenizer = PipelineTokenizer(transformations)
+    tokenizer = PipelineTokenizer(transformations, final_step=lambda x: list(x))
     tokenizer.tokenize('test')
 
     for m in transformations:
@@ -23,12 +23,16 @@ def test_pipeline_order():
     for i in list(range(10)):
         transformations.append(lambda x, i=i: f'{x}{i}')
 
-    tokenizer = PipelineTokenizer(transformations)
+    tokenizer = PipelineTokenizer(transformations=transformations,
+                                  final_step=lambda x: list(x))
     ret = tokenizer.tokenize('')
 
-    assert ret == '0123456789'
+    assert ret == list('0123456789')
 
 
 def test_pipeline_none():
     with pytest.raises(ValueError):
-        _ = PipelineTokenizer(None)
+        _ = PipelineTokenizer(transformations=None, final_step=lambda x: list(x))
+
+    with pytest.raises(ValueError):
+        _ = PipelineTokenizer(transformations=[], final_step=None)
