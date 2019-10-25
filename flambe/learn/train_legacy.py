@@ -16,7 +16,7 @@ from flambe.logging import log
 
 
 class Trainer(Component):
-    """Implement a Trainer.
+    """Implement a Trainer block.
 
     A `Trainer` takes as input data, model and optimizer,
     and executes training incrementally in `run`.
@@ -29,19 +29,23 @@ class Trainer(Component):
 
     def __init__(self,
                  dataset: Dataset,
-                 model: Model,
+                 train_sampler: Sampler,
+                 val_sampler: Sampler,
+                 model: Module,
+                 loss_fn: Metric,
+                 metric_fn: Metric,
                  optimizer: Optimizer,
                  scheduler: Optional[_LRScheduler] = None,
                  iter_scheduler: Optional[_LRScheduler] = None,
                  device: Optional[str] = None,
-                 eval_freq: float = 0.001,
-                 checkpoint_freq: float = 0.01,
-                 num_epochs: float = 1.0,
-                 num_iters: Optional[int] = None,
-                 gradient_accumulation: int = 1,
+                 max_steps: int = 10,
+                 epoch_per_step: float = 1.0,
+                 iter_per_step: Optional[int] = None,
+                 batches_per_iter: int = 1,
                  lower_is_better: bool = False,
                  max_grad_norm: Optional[float] = None,
-                 max_grad_abs_val: Optional[float] = None) -> None:
+                 max_grad_abs_val: Optional[float] = None,
+                 extra_validation_metrics: Optional[List[Metric]] = None) -> None:
         """Initialize an instance of Trainer
 
         Parameters
