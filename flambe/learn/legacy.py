@@ -1,4 +1,5 @@
 import math
+import warnings
 from copy import deepcopy
 from typing import Dict, List, Optional, Any, Tuple, Iterator
 
@@ -10,13 +11,13 @@ from torch.nn.utils.clip_grad import clip_grad_norm_, clip_grad_value_
 from flambe.dataset import Dataset
 from flambe.compile import Schema, State, Component
 from flambe.nn import Module
-from flambe.sampler import Sampler
+from flambe.sampler import Sampler, BaseSampler
 from flambe.metric import Metric
 from flambe.logging import log
 
 
 class Trainer(Component):
-    """Implement a Trainer.
+    """Implement a Trainer block.
 
     A `Trainer` takes as input data, model and optimizer,
     and executes training incrementally in `run`.
@@ -29,19 +30,23 @@ class Trainer(Component):
 
     def __init__(self,
                  dataset: Dataset,
-                 model: Model,
+                 train_sampler: Sampler,
+                 val_sampler: Sampler,
+                 model: Module,
+                 loss_fn: Metric,
+                 metric_fn: Metric,
                  optimizer: Optimizer,
                  scheduler: Optional[_LRScheduler] = None,
                  iter_scheduler: Optional[_LRScheduler] = None,
                  device: Optional[str] = None,
-                 eval_freq: float = 0.001,
-                 checkpoint_freq: float = 0.01,
-                 num_epochs: float = 1.0,
-                 num_iters: Optional[int] = None,
-                 gradient_accumulation: int = 1,
+                 max_steps: int = 10,
+                 epoch_per_step: float = 1.0,
+                 iter_per_step: Optional[int] = None,
+                 batches_per_iter: int = 1,
                  lower_is_better: bool = False,
                  max_grad_norm: Optional[float] = None,
-                 max_grad_abs_val: Optional[float] = None) -> None:
+                 max_grad_abs_val: Optional[float] = None,
+                 extra_validation_metrics: Optional[List[Metric]] = None) -> None:
         """Initialize an instance of Trainer
 
         Parameters
@@ -95,6 +100,9 @@ class Trainer(Component):
             (i.e model selection through early stopping)
 
         """
+        warnings.warn("Trainer is deprecated and will be removed \
+                in version 0.6.0. Use the ``Training`` object instead.")
+
         self.dataset = dataset
         self.train_sampler = train_sampler
         self.val_sampler = val_sampler
@@ -363,3 +371,102 @@ class Trainer(Component):
             obj = obj() if isinstance(obj, Schema) else obj
             if isinstance(obj, torch.nn.Module):
                 obj.to(device)
+
+
+class Evaluator(Component):
+    """Implement an Evaluator block.
+
+    An `Evaluator` takes as input data, and a model and executes
+    the evaluation. This is a single step `Component` object.
+
+    """
+
+    def __init__(self,
+                 dataset: Dataset,
+                 model: Module,
+                 metric_fn: Metric,
+                 eval_sampler: Optional[Sampler] = None,
+                 eval_data: str = 'test',
+                 device: Optional[str] = None) -> None:
+        """Initialize the evaluator.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            The dataset to run evaluation on
+        model : Module
+            The model to train
+        metric_fn: Metric
+            The metric to use for evaluation
+        eval_sampler : Optional[Sampler]
+            The sampler to use over validation examples. By default
+            it will use `BaseSampler` with batch size 16 and without
+            shuffling.
+        eval_data: str
+            The data split to evaluate on: one of train, val or test
+        device: str, optional
+            The device to use in the computation.
+
+        """
+        warnings.warn("Evaluator is deprecated and will be removed \
+                       in version 0.6.0. Use the ``Evaluation`` object instead.")
+
+        self.eval_sampler = eval_sampler or BaseSampler(batch_size=16, shuffle=False)
+        self.model = model
+        self.metric_fn = metric_fn
+        self.eval_metric = None
+        self.dataset = dataset
+
+        # Select right device
+        if device is not None:
+            self.device = device
+        else:
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        data = getattr(dataset, eval_data)
+        self._eval_iterator = self.eval_sampler.sample(data)
+
+        # By default, no prefix applied to tb logs
+        self.tb_log_prefix = None
+
+    def run(self, block_name: str = None) -> bool:
+        """Run the evaluation.
+
+        Returns
+        ------
+        bool
+            Whether the component should continue running.
+
+        """
+        self.model.to(self.device)
+        self.model.eval()
+        with torch.no_grad():
+            preds, targets = [], []
+
+            for batch in self._eval_iterator:
+                pred, target = self.model(*[t.to(self.device) for t in batch])
+                preds.append(pred.cpu())
+                targets.append(target.cpu())
+
+            preds = torch.cat(preds, dim=0)  # type: ignore
+            targets = torch.cat(targets, dim=0)  # type: ignore
+            self.eval_metric = self.metric_fn(preds, targets).item()
+
+            tb_prefix = f"{self.tb_log_prefix} " if self.tb_log_prefix else ""
+
+            log(f'{tb_prefix}Eval {self.metric_fn}',  # type: ignore
+                self.eval_metric, global_step=0)  # type: ignore
+
+        continue_ = False  # Single step so don't continue
+        return continue_
+
+    def metric(self) -> Optional[float]:
+        """Override this method to enable scheduling.
+
+        Returns
+        -------
+        float
+            The metric to compare computable varients
+
+        """
+        return self.eval_metric
