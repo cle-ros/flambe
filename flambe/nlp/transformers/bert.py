@@ -1,5 +1,5 @@
 """
-Intergation of the pytorch_transformers bert module.
+Intergation of the transformers bert module.
 
 Note that these objects are only to be used to load
 pretrained models. The pytorch-transformers library
@@ -7,13 +7,13 @@ wasn't designed to train these models from scratch.
 
 """
 
-import pytorch_transformers as pt
+import transformers as pt
 
 from flambe.nlp.transformers.utils import TransformerTextField, TransformerEmbedder
 
 
 class BertTextField(TransformerTextField):
-    """Integrate the pytorch_transformers BertTokenizer.
+    """Integrate the transformers BertTokenizer.
 
     Currently available aliases:
         . `bert-base-uncased`
@@ -36,7 +36,7 @@ class BertTextField(TransformerTextField):
 
 
 class BertEmbedder(TransformerEmbedder):
-    """Integrate the pytorch_transformers BertModel.
+    """Integrate the transformers BertModel.
 
     Currently available aliases:
         . `bert-base-uncased`

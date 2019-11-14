@@ -1,5 +1,5 @@
 """
-Intergation of the pytorch_transformers xlm module.
+Intergation of the transformers xlm module.
 
 Note that these objects are only to be used to load
 pretrained models. The pytorch-transformers library
@@ -7,13 +7,13 @@ wasn't designed to train these models from scratch.
 
 """
 
-import pytorch_transformers as pt
+import transformers as pt
 
 from flambe.nlp.transformers.utils import TransformerTextField, TransformerEmbedder
 
 
 class XLMTextField(TransformerTextField):
-    """Integrate the pytorch_transformers XLMTokenizer.
+    """Integrate the transformers XLMTokenizer.
 
     Currently available aliases:
         . `xlm-mlm-en-2048`
@@ -31,7 +31,7 @@ class XLMTextField(TransformerTextField):
 
 
 class XLMEmbedder(TransformerEmbedder):
-    """Integrate the pytorch_transformers XLMModel.
+    """Integrate the transformers XLMModel.
 
     Currently available aliases:
         . `xlm-mlm-en-2048`

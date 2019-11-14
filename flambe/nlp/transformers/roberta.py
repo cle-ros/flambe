@@ -1,5 +1,5 @@
 """
-Intergation of the pytorch_transformers roberta module.
+Intergation of the transformers roberta module.
 
 Note that these objects are only to be used to load
 pretrained models. The pytorch-transformers library
@@ -7,13 +7,13 @@ wasn't designed to train these models from scratch.
 
 """
 
-import pytorch_transformers as pt
+import transformers as pt
 
 from flambe.nlp.transformers.utils import TransformerTextField, TransformerEmbedder
 
 
 class RobertaTextField(TransformerTextField):
-    """Integrate the pytorch_transformers RobertaTokenizer.
+    """Integrate the transformers RobertaTokenizer.
 
     Currently available aliases:
         . `roberta-base`
@@ -26,7 +26,7 @@ class RobertaTextField(TransformerTextField):
 
 
 class RobertaEmbedder(TransformerEmbedder):
-    """Integrate the pytorch_transformers RobertaModel.
+    """Integrate the transformers RobertaModel.
 
     Currently available aliases:
         . `roberta-base`

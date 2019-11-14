@@ -1,7 +1,7 @@
 from typing import Optional, Type, Any
 
 import torch
-import pytorch_transformers as pt
+import transformers as pt
 
 from flambe.field import Field
 from flambe.nn import Module

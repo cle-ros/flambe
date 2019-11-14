@@ -1,5 +1,5 @@
 """
-Intergation of the pytorch_transformers openai and gpt2 modules.
+Intergation of the transformers openai and gpt2 modules.
 
 Note that these objects are only to be used to load
 pretrained models. The pytorch-transformers library
@@ -7,13 +7,13 @@ wasn't designed to train these models from scratch.
 
 """
 
-import pytorch_transformers as pt
+import transformers as pt
 
 from flambe.nlp.transformers.utils import TransformerTextField, TransformerEmbedder
 
 
 class GPTTextField(TransformerTextField):
-    """Integrate the pytorch_transformers OpenAIGPTTokenizer.
+    """Integrate the transformers OpenAIGPTTokenizer.
 
     Currently available aliases:
         . `openai-gpt`
@@ -24,7 +24,7 @@ class GPTTextField(TransformerTextField):
 
 
 class GPTEmbedder(TransformerEmbedder):
-    """Integrate the pytorch_transformers OpenAIGPTmodel.
+    """Integrate the transformers OpenAIGPTmodel.
 
     Currently available aliases:
         . `openai-gpt`
@@ -35,7 +35,7 @@ class GPTEmbedder(TransformerEmbedder):
 
 
 class GPT2TextField(TransformerTextField):
-    """Integrate the pytorch_transformers GPT2Tokenizer.
+    """Integrate the transformers GPT2Tokenizer.
 
     Currently available aliases:
         . `gpt2`
@@ -48,7 +48,7 @@ class GPT2TextField(TransformerTextField):
 
 
 class GPT2Embedder(TransformerEmbedder):
-    """Integrate the pytorch_transformers GPT2Model.
+    """Integrate the transformers GPT2Model.
 
     Currently available aliases:
         . `gpt2`

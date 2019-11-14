@@ -1,8 +1,8 @@
 """
-Intergation of the pytorch_transformers optimization module
+Intergation of the transformers optimization module
 """
 
-import pytorch_transformers as pt
+import transformers as pt
 
 from flambe import Component
 
