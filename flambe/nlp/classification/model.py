@@ -1,12 +1,19 @@
-from typing import Optional, Tuple, Union
+from typing import Tuple, Dict, Iterable, Callable
 
 import torch.nn as nn
 from torch import Tensor
 
-from flambe.nn import Embedder, Module
+from flambe.dataset import Dataset
+from flambe.sampler import BaseSampler
+from flambe.model import Model
+from flambe.nn import Embedder
+from flambe.metric import Accuracy
 
 
-class TextClassifier(Module):
+Batch = Tuple[Tensor, Tensor]
+
+
+class TextClassifier(Model):
     """Implements a standard classifier.
 
     The classifier is composed of an encoder module, followed by
@@ -20,17 +27,18 @@ class TextClassifier(Module):
         The output layer, yields a probability distribution over targets
     drop: nn.Dropout
         the dropout layer
-    loss: Metric
-        the loss function to optimize the model with
-    metric: Metric
-        the dev metric to evaluate the model on
 
     """
 
     def __init__(self,
                  embedder: Embedder,
-                 output_layer: Module,
-                 dropout: float = 0) -> None:
+                 ouput_size: int,
+                 dropout: float = 0,
+                 train_batch_size: int = 32,
+                 eval_batch_size: int = 32,
+                 tokenizer: Optional[Tokenizer] = None,
+                 text_field: Optional[TextField] = None,
+                 label_field: Optional[LabelField] = None) -> None:
         """Initialize the TextClassifier model.
 
         Parameters
@@ -46,29 +54,50 @@ class TextClassifier(Module):
         super().__init__()
 
         self.embedder = embedder
-        self.output_layer = output_layer
-
         self.drop = nn.Dropout(dropout)
+        self.output_layer = MLPEncoder(embedder.hidden_size, ouput_size)
 
-    def forward(self,
-                data: Tensor,
-                target: Optional[Tensor] = None) -> Union[Tensor, Tuple[Tensor, Tensor]]:
-        """Run a forward pass through the network.
+        self.text_field = TextField()
+        self.label_field = LabelField()
 
-        Parameters
-        ----------
-        data: Tensor
-            The input data
-        target: Tensor, optional
-            The input targets, optional
+        self.loss = nn.CrossEntropyLoss()
+        self.metric = Accuracy()
 
-        Returns
-        -------
-        Union[Tensor, Tuple[Tensor, Tensor]
-            The output predictions, and optionally the targets
+        self.train_batch_size = train_batch_size
+        self.eval_batch_size = eval_batch_size
 
-        """
+    def forward(self, data: Tensor) -> Tensor:
+        """Run a forward pass through the network."""
         encoding = self.embedder(data)
+        preds = self.output_layer(self.drop(encoding))
+        return preds
 
-        pred = self.output_layer(self.drop(encoding))
-        return (pred, target) if target is not None else pred
+    def build_model(self, dataset):
+        # Build vocabularies
+        text, label = zip(*dataset)
+        self.text_field.setup(text)
+        self.label_field.setup(label)
+
+    def sampler(self, dataset: Dataset, train: bool = True) -> Iterable[Batch]:
+        """Sample batches of data for training or validation."""
+        batch_size = self.train_batch_size if train else self.eval_batch_size
+        return BaseSampler(dataset, suffle=train, batch_size=batch_size)
+
+    def batch_train(self, batch: Batch) -> Dict[str, Tensor]:
+        """Compute loss on the given batch."""
+        text, labels = batch
+        preds = self.forward(text)
+        loss = self.loss(preds, labels)
+        return {'loss': loss, 'preds': preds}
+
+    def batch_eval(self, batch: Batch) -> Dict[str, Tensor]:
+        """Compute validation metrics on the given batch."""
+        text, labels = batch
+        preds = self.forward(source)
+        loss = self.loss(preds, target)
+        accuracy = self.accuracy(preds, target)
+        return {'accuracy': accuracy.item(), 'loss': loss.item()}
+
+    def compare(self, metrics: Dict[str, float], other: Dict[str, float]) -> bool:
+        """Compare this model's metrics to another's."""
+        return metrics['Accuracy'] > other['Accuracy']

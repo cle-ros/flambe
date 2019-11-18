@@ -14,25 +14,24 @@ from flambe.logging import log
 class Training(Component):
     """Implement a Pytorch Training stage.
 
-    A `Trainer` takes as input data, model and optimizer,
-    and executes training incrementally in `run`.
-
-    Note that it is important that a trainer run be long enough
-    to not increase overhead, so at least a few seconds, and ideally
-    multiple minutes.
+    The `Training` stage takes as input a dataset and a model and
+    executes training, thhrough its ``run`` and ``step`` methods.
+    See the ``Dataset``, and ``Model`` interfaces to understand how
+    to use this object.
 
     """
 
     def __init__(self,
                  dataset: Dataset,
                  model: Model,
-                 num_cpus: int = 1,
+                 optimizer: Optimizer,
                  eval_freq: float = 0.01,
                  max_epoch: float = 1.0,
                  max_iter: Optional[int] = None,
                  gradient_accumulation: int = 1,
                  max_grad_norm: Optional[float] = None,
                  max_grad_abs_val: Optional[float] = None,
+                 num_cpus: int = -1,
                  fp16: bool = False,
                  fp16_opt_level: str = 'O1',
                  eval_first: bool = True,
@@ -43,14 +42,11 @@ class Training(Component):
         ----------
         dataset : Dataset
             The dataset to use in training the model
-        model : Module
-            The model to traind
-        device: Union[str, List[str]], optional
-            The device or devices to use in the computation.
+        model : Model
+            The model to train
+        num_cpus: 
         eval_freq: float, optional
             How often to run validation
-        checkpoint_freq: float, optional
-            How often to checkpoint
         max_epoch : int, optional
             The maximum of passes over the data
         max_iter: int, optional
@@ -96,10 +92,10 @@ class Training(Component):
         self.max_grad_abs_val = max_grad_abs_val
 
         self._train_iterator = None
-        self.train_sampler: Iterable = model.sampler(dataset.train(), training=True)
-        self.val_sampler: Iterable = model.sampler(dataset.val(), training=False)
+        self.train_sampler: Iterable = model.sampler(dataset.train, training=True)
+        self.val_sampler: Iterable = model.sampler(dataset.val, training=False)
         if eval_train_set:
-            self.eval_train_sampler: Iterable = model.sampler(dataset, training=False)
+            self.eval_train_sampler: Iterable = model.sampler(dataset.train, training=False)
 
         self.model = model
         self.optimizer = optimizer
@@ -127,7 +123,9 @@ class Training(Component):
                 self.global_epoch += 1
                 self._train_iterator = iter(self.train_sampler)
 
-            loss = self.model.batch_loss(batch)
+            res = self.model.batch_train(batch)
+            loss = res['loss']
+
             if self.num_gpus > 1:
                 loss = loss.mean()
             if self.gradient_accumulation > 1:
@@ -173,7 +171,9 @@ class Training(Component):
         self.model.eval()
 
         # Compute metrics
-        metrics = map(self.model.batch_metric, self.val_sampler)
+        metrics = map(self.model.batch_eval, self.val_sampler)
+
+        # TODO: figure out logging startegy
         metrics = self.model.aggregate_metrics(metrics)
 
         # Update best model
@@ -193,14 +193,14 @@ class Training(Component):
 
         # Log everything
         for metric, value in metrics.items():
-            log(f'Validation/{metric}', value, self.global_step)  # type: ignore
+            log(f'Validation/{metric}', value, self.global_iter)  # type: ignore
 
         if self.eval_train_set:
             # Compute metrics
             metrics = map(self.model.batch_metric, self.eval_train_sampler)
             metrics = self.model.aggregate_metrics(metrics)
             for metric, value in metrics.items():
-                log(f'TrainingEval/{metric}', value, self.global_step)  # type: ignore
+                log(f'TrainingEval/{metric}', value, self.global_iter)  # type: ignore
 
         self.model.train()
 

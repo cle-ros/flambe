@@ -23,6 +23,9 @@ class Model(Module):
     internal representation of input examples, and of a batch can
     be completely generics:
 
+    - ``initialize``: run additional model related initialization,
+        which may require to compute statistics over the dataset. For
+        example, generating vocabularies in NLP models.
     - ``sampler``: takes an iterable of example data points and returns
         an iterable of batches, where a batch can be anything.
     - ``batch_train``: takes a batch and returns a dictionary which
@@ -34,9 +37,6 @@ class Model(Module):
 
     Optionally, this interface also offers the following methods:
 
-    - ``initialize``: run additional model related initialization,
-        which may require to compute statistics over the dataset. For
-        example, generating vocabularies in NLP models.
     - ``compare``: takes outputs from the ``aggregate`` method, and
         returns which of the two sets of results is best.
     - ``optimizer``: returns an initialized optimizer for this model.
@@ -47,6 +47,22 @@ class Model(Module):
         ``step`` on after every evluation step.
 
     """
+
+    @abstractmethod
+    def initialize(self, dataset: Iterable[Example]) -> None:
+        """Extra initialization based on the dataset.
+
+        This method is generally necessary for most models as it will
+        be used to create things like vocabularies for NLP models,
+        which may affect the model architecture (i.e input size).
+
+        Parameters
+        ----------
+        Iterable[Example]
+            An iterable of examples, which can be any arbitrary objects.
+
+        """
+        pass
 
     @abstractmethod
     def sampler(self, data: Iterable[Example], train: bool = True) -> Iterable[Batch]:
@@ -80,11 +96,10 @@ class Model(Module):
         """Compute loss on the given batch.
 
         Given a batch, this method computes a training step
-        by providing the output loss. By default, the key used by
-        typical Flambé stages is ``loss``, but that can generally be
-        overriden directly in these objects. This generic interface
-        allows for other stages to require extra keys that can be used
-        for more complex loss computation.
+        by providing the output loss. Should contain a key named
+        ``loss``. This generic interface allows for other stages to
+        require extra keys that can be used for more complex loss
+        computation.
 
         ``Important``: this method should *NOT* call the backward
         method, as this is generally done in the object using the model.
@@ -115,6 +130,8 @@ class Model(Module):
         ----------
         batch: Batch
             A batch of data to evaluate. The batch can take any form.
+        global_step: int
+            Global step to use for logging
 
         Returns
         -------
@@ -133,32 +150,17 @@ class Model(Module):
         Recieves a list of results where each result is an output of
         the ``batch_eval`` method, each of which corresponds to a
         a batch of data. This method is used to aggregate results
-        into a single result dictionary for the whole dataset.
+        into a single result dictionary for the whole dataset. This
+        method is also used to log different metrics during evaluation.
 
         Parameters
         ----------
         metrics: List[Dict[str, Any]]
-            List of restults as given by the ``batch_eval`` method. 
+            List of restults as given by the ``batch_eval`` method.
 
         Returns
         -------
         Dict[str, Any]
-
-        """
-        pass
-
-    def initialize(self, dataset: Iterable[Example]):
-        """Extra initialization based on the dataset.
-
-        This method is generally necessary for most models as it will
-        be used to create things like vocabularies for NLP models. It
-        is however not required per say, since some models may not
-        require it. Does nothing by default.
-
-        Parameters
-        ----------
-        Iterable[Example]
-            An iterable of examples, which can be any arbitrary objects.
 
         """
         pass
