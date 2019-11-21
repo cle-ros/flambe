@@ -23,7 +23,7 @@ class Model(Module):
     internal representation of input examples, and of a batch can
     be completely generics:
 
-    - ``initialize``: run additional model related initialization,
+    - ``build``: run additional model related initialization,
         which may require to compute statistics over the dataset. For
         example, generating vocabularies in NLP models.
     - ``sampler``: takes an iterable of example data points and returns
@@ -34,23 +34,15 @@ class Model(Module):
         The values in the dictionary can be an abitrary object.
     - ``aggregate``: takes a list of outputs from ``batch_eval``, and
         aggregates results into a single output for the full dataset.
-
-    Optionally, this interface also offers the following methods:
-
-    - ``compare``: takes outputs from the ``aggregate`` method, and
+     - ``compare``: takes outputs from the ``aggregate`` method, and
         returns which of the two sets of results is best.
-    - ``optimizer``: returns an initialized optimizer for this model.
-        This object will be passed to the scheduler methods below.
-    - ``iter_scheduler``: returns a learning rate scheduler to call
-        ``step`` on after every optimization step.
-    - ``eval_scheduler``: returns a learning rate scheduler to call
-        ``step`` on after every evluation step.
 
     """
 
     @abstractmethod
-    def initialize(self, dataset: Iterable[Example]) -> None:
-        """Extra initialization based on the dataset.
+    @classmethod
+    def build(cls, dataset: Iterable[Example], **kwargs) -> None:
+        """Build a new model based on a dataset.
 
         This method is generally necessary for most models as it will
         be used to create things like vocabularies for NLP models,
@@ -191,46 +183,3 @@ class Model(Module):
 
         """
         return True
-
-    def optimizer(self) -> Optimizer:
-        """Get an initialized optimizer.
-
-        Returns
-        -------
-        Optimizer
-            A Pytorch optimizer to call on every iteration.
-
-        """
-        return torch.optim.Adam(self.parameters())
-
-    def iter_scheduler(self, optimizer: Optimizer) -> Optional[_LRScheduler]:
-        """The learning rate schedulers to be called on every batch.
-
-        Parameters
-        ----------
-        optimizer: Optimizer
-            The optimizer returned by the ``optimizer`` method.
-
-        Returns
-        -------
-        Optional[_LRScheduler]
-            An optional learning rate scheduler. Default is ``None``.
-
-        """
-        return None
-
-    def eval_scheduler(self, optimizer: Optimizer) -> Optional[_LRScheduler]:
-        """The learning rate schedulers to be called on every eval.
-
-        Parameters
-        ----------
-        optimizer: Optimizer
-            The optimizer returned by the ``optimizer`` method.
-
-        Returns
-        -------
-        Optional[_LRScheduler]
-            An optional learning rate scheduler. Default is ``None``.
-
-        """
-        return None
