@@ -1,4 +1,4 @@
-from flambe.optim.scheduler import LambdaLR
+from flambe.optim.scheduler.scheduler import LambdaLR
 
 
 class NoamScheduler(LambdaLR):
