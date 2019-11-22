@@ -9,6 +9,7 @@ from flambe.dataset import Dataset
 
 from flambe.model import Model
 from flambe.logging import log
+from flambe.optim import Optimizer, Scheduler
 
 
 class Training(Component):
@@ -25,6 +26,8 @@ class Training(Component):
                  dataset: Dataset,
                  model: Model,
                  optimizer: Optimizer,
+                 iter_scheduler: Optional[LRScheduler] = None,
+                 eval_scheduler: Optional[LRScheduler] = None,
                  eval_freq: float = 0.01,
                  max_epoch: float = 1.0,
                  max_iter: Optional[int] = None,
@@ -72,7 +75,6 @@ class Training(Component):
         if num_gpus > 0 and torch.cuda.is_available():
             model.cuda()
 
-        optimizer = model.optimizer()
         # Enable half precision
         if fp16:
             try:
@@ -86,25 +88,33 @@ class Training(Component):
             model = torch.nn.DataParallel(model)
 
         self.dataset = dataset
-        self.processor = model.processor(dataset)
         self.gradient_accumulation = gradient_accumulation
         self.max_grad_norm = max_grad_norm
         self.max_grad_abs_val = max_grad_abs_val
 
         self._train_iterator = None
-        self.train_sampler: Iterable = model.sampler(dataset.train, training=True)
-        self.val_sampler: Iterable = model.sampler(dataset.val, training=False)
+        self.train_sampler: Iterable = model.sampler(dataset.train, train=True)
+        self.val_sampler: Iterable = model.sampler(dataset.val, train=False)
         if eval_train_set:
-            self.eval_train_sampler: Iterable = model.sampler(dataset.train, training=False)
+            self.eval_train_sampler: Iterable = model.sampler(dataset.train, train=False)
 
-        self.model = model
+        optimizer.initialize(filter(lambda p : p.requires_grad, model.parameters()))
         self.optimizer = optimizer
-        self.iter_scheduler = self.model.iter_scheduler(optimizer)
-        self.eval_scheduler = self.model.eval_scheduler(optimizer)
+        self.model = model
+
+        self.iter_scheduler = None
+        if iter_scheduler:
+            iter_scheduler.initialize(optimizer)
+            self.iter_scheduler = iter_scheduler
+
+        self.eval_scheduler = None
+        if eval_scheduler:
+            eval_scheduler.initialize(optimizer)
+            self.eval_scheduler = eval_scheduler
 
         self.global_iter = 0
         self.global_epoch = 0
-        self.best_metrics = None
+        self.best_metric = None
         self.max_epoch = max_epoch if max_iter is None else float('inf')
         self.max_iter = max_iter or float('inf')
         self.eval_freq = eval_freq
@@ -172,19 +182,18 @@ class Training(Component):
 
         # Compute metrics
         metrics = map(self.model.batch_eval, self.val_sampler)
-
-        # TODO: figure out logging startegy
         metrics = self.model.aggregate_metrics(metrics)
 
         # Update best model
-        if self.best_metrics is None or self.model.compare(metrics, self.best_metrics):
-            self.best_metrics = metrics
+        val_metric = metrics[self.model.metric]
+        if self.best_metric is None or val_metric > self.best_metric:
+            self.best_metric = val_metric
             self.best_model = self.model.state_dict()
 
         # Update scheduler
         if self.eval_scheduler is not None:
             if isinstance(self.eval_scheduler, ReduceLROnPlateau):
-                self.scheduler.step(val_loss)
+                self.eval_scheduler.step(metrics[val_metric])
             else:
                 # torch's _LRScheduler.step DOES have a default value
                 # so passing in no args is fine; it will automatically
@@ -204,7 +213,7 @@ class Training(Component):
 
         self.model.train()
 
-    def step(self, output_dir: str) -> bool:
+    def run(self) -> bool:
         _continue = True
 
         # Initialize the training iterator
@@ -224,14 +233,9 @@ class Training(Component):
         if self.global_iter == self.max_iter or self.global_epoch == self.max_epoch:
             _continue = False
             self.model.eval()
-            self.model.load_state_dict(self._best_model)
+            self.model.load_state_dict(self.best_model)
 
         return _continue
-
-    def run(self, output_dir: str):
-        _continue = True
-        while _continue:
-            _continue = self.step(output_dir)
 
     def _state(self,
                state_dict,
@@ -259,9 +263,9 @@ class Training(Component):
         self.optimizer.load_state_dict(state_dict[prefix + 'optimizer'])
         if self.iter_scheduler is not None:
             self.iter_scheduler.load_state_dict(state_dict[prefix + 'iter_scheduler'])
-        if self.iter_scheduler is not None:
-            self.iter_scheduler.load_state_dict(state_dict[prefix + 'iter_scheduler'])
+        if self.eval_scheduler is not None:
+            self.eval_scheduler.load_state_dict(state_dict[prefix + 'eval_scheduler'])
         # Useful when loading the model after training
         done = self.global_iter >= self.max_iter
         if done:
-            self.model.load_state_dict(self._best_model)
+            self.model.load_state_dict(self.best_model)

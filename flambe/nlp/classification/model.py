@@ -3,7 +3,7 @@ from typing import Tuple, Dict, Iterable, Callable
 import torch.nn as nn
 from torch import Tensor
 
-from flambe.dataset import Dataset
+from flambe.dataset import TabularDataset
 from flambe.sampler import BaseSampler
 from flambe.model import Model
 from flambe.nn import Embedder
@@ -36,6 +36,9 @@ class TextClassifier(Model):
                  dropout: float = 0,
                  train_batch_size: int = 32,
                  eval_batch_size: int = 32,
+                 lower: bool = False,
+                 multilabel: bool = False,
+                 multilabel_sep: str = ',',
                  tokenizer: Optional[Tokenizer] = None,
                  text_field: Optional[TextField] = None,
                  label_field: Optional[LabelField] = None) -> None:
@@ -55,10 +58,10 @@ class TextClassifier(Model):
 
         self.embedder = embedder
         self.drop = nn.Dropout(dropout)
-        self.output_layer = MLPEncoder(embedder.hidden_size, ouput_size)
+        self.output_layer = nn.Linear(embedder.hidden_size, ouput_size)
 
-        self.text_field = TextField()
-        self.label_field = LabelField()
+        self.text_field = text_field or TextField(tokenizer, lower=lower)
+        self.label_field = label_field or LabelField(multilabel)
 
         self.loss = nn.CrossEntropyLoss()
         self.metric = Accuracy()
@@ -66,35 +69,43 @@ class TextClassifier(Model):
         self.train_batch_size = train_batch_size
         self.eval_batch_size = eval_batch_size
 
+    def build(cls, dataset, **kwargs):
+        """Build the model from a dataset."""
+        obj = cls(**kwargs)
+        # Build vocabularies
+        text, label = zip(*dataset)
+        obj.text_field.setup(text)
+        obj.label_field.setup(label)
+        return obj
+
     def forward(self, data: Tensor) -> Tensor:
         """Run a forward pass through the network."""
         encoding = self.embedder(data)
         preds = self.output_layer(self.drop(encoding))
         return preds
 
-    def build_model(self, dataset):
-        # Build vocabularies
-        text, label = zip(*dataset)
-        self.text_field.setup(text)
-        self.label_field.setup(label)
-
-    def sampler(self, dataset: Dataset, train: bool = True) -> Iterable[Batch]:
+    def sampler(self,
+                dataset: TabularDataset[str, str],
+                train: bool = True) -> Iterable[Batch]:
         """Sample batches of data for training or validation."""
+        dataset.set_transform(self.text_field, column=0)
+        dataset.set_transform(self.label_field, column=1)
+
         batch_size = self.train_batch_size if train else self.eval_batch_size
         return BaseSampler(dataset, suffle=train, batch_size=batch_size)
 
     def batch_train(self, batch: Batch) -> Dict[str, Tensor]:
         """Compute loss on the given batch."""
         text, labels = batch
-        preds = self.forward(text)
-        loss = self.loss(preds, labels)
+        preds = self.forward(text.to(self.device))
+        loss = self.loss(preds, labels.to(self.device))
         return {'loss': loss, 'preds': preds}
 
     def batch_eval(self, batch: Batch) -> Dict[str, Tensor]:
         """Compute validation metrics on the given batch."""
         text, labels = batch
-        preds = self.forward(source)
-        loss = self.loss(preds, target)
+        preds = self.forward(source.to(self.device))
+        loss = self.loss(preds, target.to(self.device))
         accuracy = self.accuracy(preds, target)
         return {'accuracy': accuracy.item(), 'loss': loss.item()}
 
