@@ -6,6 +6,7 @@ pretrained models. The pytorch-transformers library
 wasn't designed to train these models from scratch.
 
 """
+from typing import Optional
 
 import transformers as pt
 
@@ -58,3 +59,14 @@ class GPT2Embedder(TransformerEmbedder):
     """
 
     _cls = pt.GPT2Model
+
+    def __init__(self,
+                 alias: str,
+                 cache_dir: Optional[str] = None,
+                 padding_idx: Optional[int] = None,
+                 pool: bool = False, **kwargs) -> None:
+
+        if pool:
+            raise ValueError('GPT2 does not support pooling.')
+
+        super().__init__(alias, cache_dir, padding_idx, pool, **kwargs)
