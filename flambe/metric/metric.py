@@ -1,6 +1,6 @@
-from abc import abstractmethod
+import typing
 
-import torch
+from abc import abstractmethod
 
 from flambe.compile import Component
 
@@ -12,24 +12,11 @@ class Metric(Component):
     examples and provide as output a processd list of the same size.
 
     """
+
+    @typing.no_type_check
     @abstractmethod
-    def compute(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        """Computes the metric over the given prediction and target.
-
-        Parameters
-        ----------
-        pred: torch.Tensor
-            The model predictions
-
-        target: torch.Tensor
-            The ground truth targets
-
-        Returns
-        -------
-        torch.Tensor
-            The computed metric
-
-        """
+    def compute(self, *args, **kwargs):
+        """Computes the metric."""
         pass
 
     def __call__(self, *args, **kwargs):
