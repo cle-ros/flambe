@@ -1,5 +1,7 @@
 from abc import abstractmethod
-from typing import Dict, Iterable, List, Any, TypeVar
+from typing import Dict, Iterable, Any, TypeVar
+
+import torch
 
 from flambe.nn import Module
 
@@ -79,7 +81,7 @@ class Model(Module):
         pass
 
     @abstractmethod
-    def batch_train(self, batch: Batch) -> Dict[str, Any]:
+    def batch_train(self, batch: Batch) -> Dict[str, torch.Tensor]:
         """Compute loss on the given batch.
 
         Given a batch, this method computes a training step
@@ -106,7 +108,7 @@ class Model(Module):
         pass
 
     @abstractmethod
-    def batch_eval(self, batch: Batch) -> Dict[str, Any]:
+    def batch_eval(self, batch: Batch) -> Dict[str, torch.Tensor]:
         """Compute validation metrics on the given batch.
 
         Given a batch, this method computes a set of evaluation metrics
@@ -131,7 +133,7 @@ class Model(Module):
         pass
 
     @abstractmethod
-    def aggregate(self, metrics: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def aggregate(self, metrics: Iterable[Dict[str, Any]]) -> Dict[str, float]:
         """Aggregate evaluation metrics for the full dataset.
 
         Recieves a list of results where each result is an output of
@@ -153,7 +155,7 @@ class Model(Module):
         pass
 
     @abstractmethod
-    def val_metric(self, metrics: Dict[str, Any]) -> float:
+    def val_metric(self, metrics: Dict[str, float]) -> float:
         """Select the metrc to be used for model selection.
 
         This method recieves the output of the aggregate method, and
