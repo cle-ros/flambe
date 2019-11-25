@@ -67,8 +67,8 @@ class DistillationLoss(Metric):
         targets = targets.view(-1, student_logits.size(-1))
 
         # Calculate the softmaxes from predictions
-        student_pred = F.log_softmax(student_logits / self.temperature, dim=1)
-        teacher_pred = F.softmax(teacher_logits / self.temperature, dim=1)
+        student_pred = F.log_softmax(student_logits / self.temp, dim=1)
+        teacher_pred = F.softmax(teacher_logits / self.temp, dim=1)
 
         # Compute the losses
         student_loss = self.objective_fn(student_logits, targets)
