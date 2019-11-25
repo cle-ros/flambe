@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Any, Iterable
+from typing import Dict, List, Optional, Any, Iterable  # noqa: F401
 
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -9,7 +9,8 @@ from flambe.dataset import Dataset
 
 from flambe.model import Model
 from flambe.logging import log
-from flambe.optim import Optimizer, Scheduler
+from flambe.optim.optimizer import Optimizer
+from flambe.optim.scheduler import LRScheduler
 
 
 class Training(Component):
@@ -47,7 +48,6 @@ class Training(Component):
             The dataset to use in training the model
         model : Model
             The model to train
-        num_cpus: 
         eval_freq: float, optional
             How often to run validation
         max_epoch : int, optional
@@ -98,7 +98,7 @@ class Training(Component):
         if eval_train_set:
             self.eval_train_sampler: Iterable = model.sampler(dataset.train, train=False)
 
-        optimizer.initialize(filter(lambda p : p.requires_grad, model.parameters()))
+        optimizer.initialize(filter(lambda p: p.requires_grad, model.parameters()))
         self.optimizer = optimizer
         self.model = model
 
@@ -114,7 +114,7 @@ class Training(Component):
 
         self.global_iter = 0
         self.global_epoch = 0
-        self.best_metric = None
+        self.best_metric: Optional[float] = None
         self.max_epoch = max_epoch if max_iter is None else float('inf')
         self.max_iter = max_iter or float('inf')
         self.eval_freq = eval_freq
@@ -182,10 +182,10 @@ class Training(Component):
 
         # Compute metrics
         metrics = map(self.model.batch_eval, self.val_sampler)
-        metrics = self.model.aggregate_metrics(metrics)
+        aggregate_metrics = self.model.aggregate_metrics(metrics)
 
         # Update best model
-        val_metric = metrics[self.model.metric]
+        val_metric = self.model.val_metric(aggregate_metrics)
         if self.best_metric is None or val_metric > self.best_metric:
             self.best_metric = val_metric
             self.best_model = self.model.state_dict()
@@ -193,7 +193,7 @@ class Training(Component):
         # Update scheduler
         if self.eval_scheduler is not None:
             if isinstance(self.eval_scheduler, ReduceLROnPlateau):
-                self.eval_scheduler.step(metrics[val_metric])
+                self.eval_scheduler.step(val_metric)
             else:
                 # torch's _LRScheduler.step DOES have a default value
                 # so passing in no args is fine; it will automatically
@@ -201,14 +201,14 @@ class Training(Component):
                 self.scheduler.step()  # type: ignore
 
         # Log everything
-        for metric, value in metrics.items():
+        for metric, value in aggregate_metrics.items():
             log(f'Validation/{metric}', value, self.global_iter)  # type: ignore
 
         if self.eval_train_set:
             # Compute metrics
             metrics = map(self.model.batch_metric, self.eval_train_sampler)
-            metrics = self.model.aggregate_metrics(metrics)
-            for metric, value in metrics.items():
+            aggregate_metrics = self.model.aggregate_metrics(metrics)
+            for metric, value in aggregate_metrics.items():
                 log(f'TrainingEval/{metric}', value, self.global_iter)  # type: ignore
 
         self.model.train()
@@ -262,9 +262,11 @@ class Training(Component):
         self.global_epoch = state_dict[prefix + 'global_epoch']
         self.optimizer.load_state_dict(state_dict[prefix + 'optimizer'])
         if self.iter_scheduler is not None:
-            self.iter_scheduler.load_state_dict(state_dict[prefix + 'iter_scheduler'])
+            iter_scheduler_state = state_dict[prefix + 'iter_scheduler']
+            self.iter_scheduler.load_state_dict(iter_scheduler_state)  # type: ignore
         if self.eval_scheduler is not None:
-            self.eval_scheduler.load_state_dict(state_dict[prefix + 'eval_scheduler'])
+            eval_scheduler_state = state_dict[prefix + 'eval_scheduler']
+            self.eval_scheduler.load_state_dict(eval_scheduler_state)  # type: ignore
         # Useful when loading the model after training
         done = self.global_iter >= self.max_iter
         if done:

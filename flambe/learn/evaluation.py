@@ -1,11 +1,14 @@
+from typing import Iterable, Dict  # noqa: F401
+
 import torch
 
+from flambe.compile import Component
 from flambe.dataset import Dataset
 from flambe.model import Model
 from flambe.logging import log
 
 
-class Evaluation(Stage):
+class Evaluation(Component):
     """Implement an Evaluator block.
 
     An `Evaluator` takes as input data, and a model and executes
@@ -18,9 +21,7 @@ class Evaluation(Stage):
                  model: Model,
                  eval_train: bool = False,
                  eval_val: bool = False,
-                 eval_test: bool = True,
-                 num_cpus: int = 1,
-                 num_gpus: int = 1) -> None:
+                 eval_test: bool = True) -> None:
         """Initialize the evaluator.
 
         Parameters
@@ -42,22 +43,22 @@ class Evaluation(Stage):
 
         """
         # Select right device
-        if num_gpus > 0 and torch.cuda.is_available():
+        if torch.cuda.is_available():
             model.cuda()
 
-        samplers = {}
+        samplers: Dict[str, Iterable] = {}
         if eval_train:
-            samplers['Train'] = model.sampler(dataset.train, training=False)
+            samplers['Train'] = model.sampler(dataset.train, train=False)
         if eval_val:
-            samplers['Validation'] = model.sampler(dataset.val, training=False)
+            samplers['Validation'] = model.sampler(dataset.val, train=False)
         if eval_test:
-            samplers['Test'] = model.sampler(dataset.test, training=False)
+            samplers['Test'] = model.sampler(dataset.test, train=False)
 
         self.samplers = samplers
         self.model = model
         self.dataset = dataset
 
-    def run(self):
+    def run(self) -> bool:
         """Run the evaluation.
 
         Returns
@@ -71,7 +72,10 @@ class Evaluation(Stage):
         for name, sampler in self.samplers.items():
             # Compute metrics
             metrics = map(self.model.batch_metric, sampler)
-            metrics = self.model.aggregate_metrics(metrics)
+            aggregate_metrics = self.model.aggregate_metrics(metrics)
             # Log everything
-            for metric, value in metrics.items():
+            for metric, value in aggregate_metrics.items():
                 log(f'{name}/{metric}', value, 0)  # type: ignore
+
+        _continue = False
+        return _continue

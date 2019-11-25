@@ -1,10 +1,5 @@
 from abc import abstractmethod
-from typing import Dict, Iterable, Optional, List, Any, TypeVar
-
-import torch
-
-from torch.optim.optimizer import Optimizer
-from torch.optim.lr_scheduler import _LRScheduler
+from typing import Dict, Iterable, List, Any, TypeVar
 
 from flambe.nn import Module
 
@@ -34,13 +29,13 @@ class Model(Module):
         The values in the dictionary can be an abitrary object.
     - ``aggregate``: takes a list of outputs from ``batch_eval``, and
         aggregates results into a single output for the full dataset.
-     - ``compare``: takes outputs from the ``aggregate`` method, and
-        returns which of the two sets of results is best.
+     - ``val_metric``: takes outputs from the ``aggregate`` method, and
+        returns the value of the metric to use for model selection.
 
     """
 
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def build(cls, dataset: Iterable[Example], **kwargs) -> None:
         """Build a new model based on a dataset.
 
@@ -157,29 +152,25 @@ class Model(Module):
         """
         pass
 
-    def compare(self, metrics: Dict[str, Any], other: Dict[str, Any]) -> bool:
-        """Compare this model's metrics to another's.
+    @abstractmethod
+    def val_metric(self, metrics: Dict[str, Any]) -> float:
+        """Select the metrc to be used for model selection.
 
         This method recieves the output of the aggregate method, and
-        if used to determine which of two models performed best so
-        thhat early stopping can be done. The default implementation
-        returns ``True``, meaning that the latest model is always
-        picked, but you can easily override this behavior.
+        returns a single float value to be used for model selection
+        and early stopping. A higher number should indicate improvement.
+        For metrics where lower means "better", smply return the
+        negative value of the metric.
 
         Parameters
         ----------
         metrics: Dict[str, Any]
-            Dictionary of metrics provided by the ``aggregate`` method,
-            for the first model.
-        other: Dict[str, Any]
-            Dictionary of metrics provided by the ``aggregate`` method,
-            for the other model to compare agaisnt.
+            Dictionary of metrics provided by the ``aggregate`` method.
 
         Returns
         -------
-        bool
-            ``True`` if the first model outperforms the second, and
-            ``False`` otherwise.
+        float
+            The validation metric to pick the best performing model.
 
         """
-        return True
+        pass
