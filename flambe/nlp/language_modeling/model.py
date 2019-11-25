@@ -88,7 +88,9 @@ class LanguageModel(Module):
             # Flatten to compute loss across batch and sequence
             flat_mask = mask.view(-1).byte()
             flat_encodings = encoding.view(-1, encoding.size(2))[flat_mask]
-            flat_targets = target.contiguous().view(-1)[flat_mask]
+            # Not sure why mypy won't detect contiguous, it is a
+            # method on torch.Tensor
+            flat_targets = target.contiguous().view(-1)[flat_mask]  # type: ignore
             flat_pred = self.output_layer(self.drop(flat_encodings))
             return flat_pred, flat_targets
         else:

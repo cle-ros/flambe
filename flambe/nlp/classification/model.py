@@ -69,7 +69,7 @@ class TextClassifier(Module):
 
         """
         outputs = self.embedder(data)
-        if isinstance(outputs, Tuple):
+        if isinstance(outputs, tuple):
             encoding = outputs[0]
         else:
             encoding = outputs
