@@ -307,7 +307,7 @@ class Trainer(Component):
         continue_ = self._step < self.max_steps
         if not continue_:
             self._eval_step()
-            self.model.load_state_dict(self._best_model)
+            self.model.load_state_dict(self._best_model, strict=False)
 
         return continue_
 
@@ -345,7 +345,7 @@ class Trainer(Component):
         # Useful when loading the model after training
         done = self._step >= self.max_steps
         if done:
-            self.model.load_state_dict(self._best_model)
+            self.model.load_state_dict(self._best_model, strict=False)
 
     @classmethod
     def precompile(cls, **kwargs):
@@ -360,8 +360,11 @@ class Trainer(Component):
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # Compile all objects and push Modules to the device
-        for k, obj in kwargs.items():
-            obj = obj() if isinstance(obj, Schema) else obj
+        def move_to_device(obj: Any):
             if isinstance(obj, torch.nn.Module):
                 obj.to(device)
+
+        # Compile all objects and push Modules to the device
+        for k, obj in kwargs.items():
+            if isinstance(obj, Schema):
+                obj.post_init_hooks.append(move_to_device)
