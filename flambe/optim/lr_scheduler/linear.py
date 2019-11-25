@@ -1,6 +1,8 @@
+from typing import Optional
+
 import torch
 
-from flambe.optim.scheduler import LambdaLR
+from flambe.optim.lr_scheduler.scheduler import LambdaLR
 
 
 class WarmupLinearScheduler(LambdaLR):
@@ -16,9 +18,9 @@ class WarmupLinearScheduler(LambdaLR):
     """
 
     def __init__(self,
-                 warmup: int,
-                 n_steps: int,
-                 optimizer: Optional[torch.optim.Optimizer] = None):
+                 optimizer: Optional[torch.optim.Optimizer] = None,
+                 warmup: int = 100,
+                 n_steps: int = 1000) -> None:
         """Initialize the WarmupLinearScheduler.
 
         Parameters
@@ -33,10 +35,7 @@ class WarmupLinearScheduler(LambdaLR):
         """
         self.warmup = warmup
         self.n_steps = n_steps
-        self.kwargs = 
-
-    def initialize(self, optimizer):
-        super().__init__(optimizer, lr_lambda=self.lr_lambda, last_epoch=-1)  # type: ignore
+        super().__init__(optimizer=optimizer, lr_lambda=self.lr_lambda, last_epoch=-1)
 
     def lr_lambda(self, step: int) -> float:
         """Compue the learning rate factor.

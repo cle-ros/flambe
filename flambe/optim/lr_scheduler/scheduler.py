@@ -12,7 +12,7 @@ class LRScheduler(Component):
         self.initialized = False
         if optimizer is not None:
             self.initialized = True
-            super().__init__(optimizer, **kwargs)
+            self._cls.__init__(self, optimizer=optimizer, **kwargs)
         else:
             self.kwargs = kwargs
 
@@ -21,7 +21,7 @@ class LRScheduler(Component):
             raise ValueError("Scheduler already initialized with optimizer.")
 
         self.initialized = True
-        self._cls.__init__(self, optimizer, **self.kwargs)
+        self._cls.__init__(self, optimizer=optimizer, **self.kwargs)
         del self.kwargs
 
     def state_dict(self):

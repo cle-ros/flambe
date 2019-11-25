@@ -5,7 +5,7 @@ import torch
 from flambe import Component
 
 
-class Optimizer(torch.optim.optimizer.Optimizer, Component):
+class Optimizer(torch.optim.Optimizer, Component):
     """Adapter to the Pytorch Optimizer class.
 
     This object allows an optimizer to be instantiated without
@@ -14,22 +14,22 @@ class Optimizer(torch.optim.optimizer.Optimizer, Component):
 
     """
 
-    _cls: Type[torch.optim.optimizer.Optimizer]
+    _cls: Type[torch.optim.Optimizer]
 
-    def __init__(self, parameters=None, **kwargs):
+    def __init__(self, params=None, **kwargs):
         self.initialized = False
         if parameters is not None:
             self.initialized = True
-            super().__init__(parameters, **kwargs)
+            self._cls.__init__(self, params=parameters, **kwargs)
         else:
             self.kwargs = kwargs
 
-    def initialize(self, parameters):
+    def initialize(self, params):
         if self.initialized:
             raise ValueError("Optimizer already initialized with parameters.")
 
         self.initialized = True
-        self._cls.__init__(self, parameters, **self.kwargs)
+        self._cls.__init__(self, params=params, **self.kwargs)
         del self.kwargs
 
 

@@ -1,21 +1,23 @@
-from flambe.optim.scheduler.scheduler import LambdaLR
+from typing import Optional
+
+import torch
+
+from flambe.optim.lr_scheduler.scheduler import LambdaLR
 
 
 class NoamScheduler(LambdaLR):
     """Linear warmup and then quadratic decay.
 
     Linearly increases the learning rate from 0 to 1 over
-    `warmup` steps.
-    Quadratically decreases the learning rate after.
-
+    `warmup` steps. Quadratically decreases the learning rate after.
     This scheduler is generally used after every training batch.
 
     """
 
     def __init__(self,
-                 optimizer,
-                 warmup: int,
-                 d_model: int):
+                 optimizer: Optional[torch.optim.Optimizer] = None,
+                 warmup: int = 100,
+                 d_model: int = 768) -> None:
         """Initialize the NoamScheduler.
 
         Parameters

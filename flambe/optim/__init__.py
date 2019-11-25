@@ -1,7 +1,5 @@
-from flambe.optim.scheduler import LRScheduler, LambdaLR
-from flambe.optim.noam import NoamScheduler
-from flambe.optim.linear import WarmupLinearScheduler
+from flambe.optim import optimizer
+from flambe.optim import lr_scheduler
 
 
-__all__ = ['LRScheduler', 'LambdaLR',
-           'NoamScheduler', 'WarmupLinearScheduler']
+__all__ = ['optimizer', 'lr_scheduler']
