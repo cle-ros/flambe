@@ -2,14 +2,14 @@ from typing import Optional, Tuple, List
 
 import torch
 import torch.nn.functional as F
-from torch.optim.optimizer import Optimizer
-from torch.optim.lr_scheduler import _LRScheduler
 
 from flambe.dataset import Dataset
 from flambe.metric import Metric
 from flambe.sampler import Sampler
 from flambe.learn import Trainer
-from flambe.nn import Module
+from flambe.model import Model
+from flambe.optim.optimizer import Optimizer
+from flambe.optim.scheduler import LRScheduler
 
 
 class DistillationTrainer(Trainer):
@@ -24,12 +24,8 @@ class DistillationTrainer(Trainer):
 
     def __init__(self,
                  dataset: Dataset,
-                 train_sampler: Sampler,
-                 val_sampler: Sampler,
-                 teacher_model: Module,
-                 student_model: Module,
-                 loss_fn: Metric,
-                 metric_fn: Metric,
+                 teacher_model: Model,
+                 student_model: Model,
                  optimizer: Optimizer,
                  scheduler: Optional[_LRScheduler] = None,
                  iter_scheduler: Optional[_LRScheduler] = None,
