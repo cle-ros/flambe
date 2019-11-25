@@ -10,6 +10,7 @@ from torch.nn.utils.clip_grad import clip_grad_norm_, clip_grad_value_
 
 from flambe.dataset import Dataset
 from flambe.compile import Schema, State, Component
+from flambe.learn.utils import select_device
 from flambe.nn import Module
 from flambe.sampler import Sampler, BaseSampler
 from flambe.metric import Metric
@@ -121,10 +122,7 @@ class Trainer(Component):
         self.tb_log_prefix = None
 
         # Select right device
-        if device is not None:
-            self.device = device
-        else:
-            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = select_device(device)
 
         if (not getattr(self.train_sampler, 'drop_last', False) and batches_per_iter != 1):
             raise ValueError(f'batches_per_iter cannot be set to {batches_per_iter} '
@@ -366,11 +364,14 @@ class Trainer(Component):
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # Compile all objects and push Modules to the device
-        for k, obj in kwargs.items():
-            obj = obj() if isinstance(obj, Schema) else obj
+        def move_to_device(obj: Any):
             if isinstance(obj, torch.nn.Module):
                 obj.to(device)
+
+        # Compile all objects and push Modules to the device
+        for k, obj in kwargs.items():
+            if isinstance(obj, Schema):
+                obj.post_init_hooks.append(move_to_device)
 
 
 class Evaluator(Component):

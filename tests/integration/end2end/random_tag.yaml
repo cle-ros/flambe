@@ -1,11 +1,13 @@
 !Experiment
 
 name: text_classification
-save_path: .
 
 pipeline:
   b1: !Trainer
-    dataset: !SSTDataset
+    dataset: !TabularDataset.from_path
+      train_path: {top_level}/tests/data/dummy_tabular/train.csv
+      val_path: {top_level}/tests/data/dummy_tabular/val.csv
+      sep: ','
       transform:
         text: !TextField
         label: !LabelField
@@ -28,5 +30,5 @@ pipeline:
     metric_fn: !Accuracy
     optimizer: !torch.Adam
       params: !@ b1[model].trainable_params
-    max_steps: 2
+    max_steps: 1
     iter_per_step: 1

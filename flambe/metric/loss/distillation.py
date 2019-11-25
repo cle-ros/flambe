@@ -3,8 +3,10 @@ from typing import Tuple, Callable, Optional
 import torch
 import torch.nn.functional as F
 
+from flambe.metric import Metric
 
-class DistillationLoss(torch.nn.Module):
+
+class DistillationLoss(Metric):
     """Distillation loss module."""
 
     def __init__(self,
@@ -30,7 +32,7 @@ class DistillationLoss(torch.nn.Module):
         self.alpha_kl = alpha_kl
         self.temp = temperature
 
-    def forward(self,
+    def compute(self,
                 student_logits: torch.Tensor,
                 teacher_logits: torch.Tensor,
                 targets: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
