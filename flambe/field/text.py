@@ -3,11 +3,6 @@ from collections import OrderedDict as odict
 
 import torch
 import numpy as np
-import gensim.downloader as api
-from gensim.models import KeyedVectors
-from gensim.scripts.glove2word2vec import glove2word2vec
-from gensim.test.utils import temporary_file
-
 from flambe.field import Field, Embedding
 from flambe.tokenizer import Tokenizer, WordTokenizer
 
@@ -121,16 +116,15 @@ class TextField(Field):
 
         """
         if self.embeddings is not None:
-            model = self.embeddings
             # Load embedding model
             embeddings_matrix = []
 
             # Add embeddings for special tokens
             for special in self.specials:
-                if special in model:
-                    embeddings_matrix.append(torch.tensor(model[special]))
+                if special in self.embeddings:
+                    embeddings_matrix.append(torch.tensor(self.embeddings[special]))
                 else:
-                    embeddings_matrix.append(torch.randn(model.vector_size))
+                    embeddings_matrix.append(torch.randn(self.embeddings.vector_size))
 
         # Iterate over all examples
         examples = (e for dataset in data for e in dataset if dataset is not None)
@@ -145,14 +139,14 @@ class TextField(Field):
             for token in self.tokenizer(example):
                 if token not in self.vocab:
                     if self.embeddings is not None:
-                        if token in model:
+                        if token in self.embeddings:
                             self.vocab[token] = index = index + 1
-                            embeddings_matrix.append(torch.tensor(model[token]))
+                            embeddings_matrix.append(torch.tensor(self.embeddings[token]))
                         else:
                             if self.unk_init_all:
                                 # Give every OOV it's own embedding
                                 self.vocab[token] = index = index + 1
-                                embeddings_matrix.append(torch.randn(model.vector_size))
+                                embeddings_matrix.append(torch.randn(self.embeddings.vector_size))
                             else:
                                 # Collapse all OOV's to the same token
                                 # id

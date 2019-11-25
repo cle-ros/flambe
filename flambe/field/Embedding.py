@@ -1,26 +1,40 @@
-from typing import Optional, Dict, Set
-from collections import OrderedDict as odict
-
-import torch
-import numpy as np
 import gensim.downloader as api
 from gensim.models import KeyedVectors
 from gensim.scripts.glove2word2vec import glove2word2vec
 from gensim.test.utils import temporary_file
 
-from flambe.field import Field
-from flambe.tokenizer import Tokenizer, WordTokenizer
+
+def Embedding():
+    def vector_size(self):
+        pass
+
+    def __getitem__(self, key):
+        pass
 
 
-def build_glove(pretrained, binary):
+def ExternalEmbedding(Embedding):
+    def __init__(self, delegate):
+        self.delegate = delegate
+
+    def vector_size(self):
+        return self.delegate.vector_size()
+
+    def __getitem__(self, key):
+        return self.delegate[key]
+
+
+def build_glove(pretrained: str, binary: bool):
     with temporary_file('temp.txt') as temp:
         glove2word2vec(pretrained, temp)
-        return KeyedVectors.load_word2vec_format(temp, binary=binary)
+        return ExternalEmbedding(KeyedVectors.load_word2vec_format(temp, binary=binary))
 
-def build_word2vec(pretrained, binary):
-    return KeyedVectors.load_word2vec_format(pretrained,
-                                              binary=binary)
-def build_gensim(pretrained):
+
+def build_word2vec(pretrained: str, binary: bool):
+    return ExternalEmbedding(KeyedVectors.load_word2vec_format(pretrained,
+                                                               binary=binary))
+
+
+def build_gensim(pretrained: str):
     """
     embeddings_format : str, optional
             The format of the input embeddings, should be one of:
@@ -38,4 +52,4 @@ def build_gensim(pretrained):
         model = KeyedVectors.load(pretrained)
     except FileNotFoundError:
         model = api.load(pretrained)
-    return model
+    return ExternalEmbedding(model)
