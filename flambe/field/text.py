@@ -8,7 +8,7 @@ from gensim.models import KeyedVectors
 from gensim.scripts.glove2word2vec import glove2word2vec
 from gensim.test.utils import temporary_file
 
-from flambe.field import Field
+from flambe.field import Field, Embedding
 from flambe.tokenizer import Tokenizer, WordTokenizer
 
 
@@ -37,9 +37,7 @@ class TextField(Field):
                  unk_token: Optional[str] = '<unk>',
                  sos_token: Optional[str] = None,
                  eos_token: Optional[str] = None,
-                 embeddings: Optional[str] = None,
-                 embeddings_format: str = 'glove',
-                 embeddings_binary: bool = False,
+                 embeddings: Optional[Embedding] = None,
                  unk_init_all: bool = False,
                  drop_unknown: bool = False) -> None:
         """Initialize the TextField.
@@ -65,15 +63,6 @@ class TextField(Field):
             sequence (defaults to an empty list)
         embeddings : Optional[str], optional
             Path to pretrained embeddings, by default None
-        embeddings_format : str, optional
-            The format of the input embeddings, should be one of:
-            'glove', 'word2vec', 'fasttext' or 'gensim'. The latter can
-            be used to download embeddings hosted on gensim on the fly.
-            See https://github.com/RaRe-Technologies/gensim-data
-            for the list of available embedding aliases.
-        embeddings_binary : bool, optional
-            Whether the input embeddings are provided in binary format,
-            by default False
         unk_init_all : bool, optional
             If True, every token not provided in the input embeddings is
             given a random embedding from a normal distribution.
@@ -93,8 +82,6 @@ class TextField(Field):
         self.eos = eos_token
 
         self.embeddings = embeddings
-        self.embeddings_format = embeddings_format
-        self.embeddings_binary = embeddings_binary
         self.embedding_matrix: Optional[torch.Tensor] = None
         self.unk_init_all = unk_init_all
         self.drop_unknown = drop_unknown
@@ -134,25 +121,9 @@ class TextField(Field):
 
         """
         if self.embeddings is not None:
+            model = self.embeddings
             # Load embedding model
             embeddings_matrix = []
-            if self.embeddings_format == 'glove':
-                with temporary_file('temp.txt') as temp:
-                    glove2word2vec(self.embeddings, temp)
-                    model = KeyedVectors.load_word2vec_format(temp, binary=self.embeddings_binary)
-            elif self.embeddings_format == 'word2vec':
-                model = KeyedVectors.load_word2vec_format(self.embeddings,
-                                                          binary=self.embeddings_binary)
-            elif self.embeddings_format == 'fasttext':
-                model = KeyedVectors.load_fasttext_format(self.embeddings,
-                                                          binary=self.embeddings_binary)
-            elif self.embeddings_format == 'gensim':
-                try:
-                    model = KeyedVectors.load(self.embeddings)
-                except FileNotFoundError:
-                    model = api.load(self.embeddings)
-            else:
-                raise ValueError("Only formats supported are word2vec, fasttext and gensim")
 
             # Add embeddings for special tokens
             for special in self.specials:
