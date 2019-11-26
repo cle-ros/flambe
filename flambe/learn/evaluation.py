@@ -71,8 +71,8 @@ class Evaluation(Component):
 
         for name, sampler in self.samplers.items():
             # Compute metrics
-            metrics = map(self.model.batch_metric, sampler)
-            aggregate_metrics = self.model.aggregate_metrics(metrics)
+            metrics = map(self.model.batch_eval, sampler)
+            aggregate_metrics = self.model.aggregate(metrics)
             # Log everything
             for metric, value in aggregate_metrics.items():
                 log(f'{name}/{metric}', value, 0)  # type: ignore

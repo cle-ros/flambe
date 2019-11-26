@@ -1,3 +1,4 @@
+import warnings
 from typing import Dict, List, Optional, Any, Iterable  # noqa: F401
 
 import torch
@@ -48,6 +49,12 @@ class Training(Component):
             The dataset to use in training the model
         model : Model
             The model to train
+        optimizer: Optimizer
+            The optimizer to use
+        iter_scheduler: LRScheduler
+            A scheduler to apply on every batch
+        eval_scheduler: LRScheduler
+            A scheduler to apply on every evaluation step
         eval_freq: float, optional
             How often to run validation
         max_epoch : int, optional
@@ -55,8 +62,6 @@ class Training(Component):
         max_iter: int, optional
             The maximum number of iterations to run during training.
             If provided, overrides max_epoch.
-        fp16_opt_level: str, optional
-            Apex AMP optimization level: one of ['O0', 'O1', 'O2', 'O3']
         gradient_accumulation: int, optional
             Number of batches to pass through the model before
             calling optimizer.step. Requires the sampler to have
@@ -67,6 +72,17 @@ class Training(Component):
         max_grad_abs_val: float, optional
             Maximum absolute value of all gradient vector components
             after clipping.
+        fp16: bool, optional
+            Whether to run training with half precision. Requires Apex
+            to be installed. Default ``False``.
+        fp16_opt_level: str, optional
+            Apex AMP optimization level: one of ['O0', 'O1', 'O2', 'O3']
+        eval_first: bool, optional
+            Wether to evaluate the model before training starts.
+            Default ``True.
+        eval_train_set: bool, optional
+            Whether to also run evaluation on the training data.
+            Default ``False.``
 
         """
         # Select right device
@@ -98,19 +114,18 @@ class Training(Component):
         if eval_train_set:
             self.eval_train_sampler: Iterable = model.sampler(dataset.train, train=False)
 
-        optimizer.initialize(filter(lambda p: p.requires_grad, model.parameters()))
-        self.optimizer = optimizer
         self.model = model
+        self.optimizer = optimizer
+        if isinstance(optimizer, Optimizer) and not optimizer.initialized:
+            optimizer.initialize(filter(lambda p: p.requires_grad, model.parameters()))
 
-        self.iter_scheduler = None
-        if iter_scheduler:
+        self.iter_scheduler = iter_scheduler
+        if isinstance(iter_scheduler, LRScheduler) and not iter_scheduler.initialized:
             iter_scheduler.initialize(optimizer)
-            self.iter_scheduler = iter_scheduler
 
-        self.eval_scheduler = None
-        if eval_scheduler:
+        self.eval_scheduler = eval_scheduler
+        if isinstance(eval_scheduler, LRScheduler) and not eval_scheduler.initialized:
             eval_scheduler.initialize(optimizer)
-            self.eval_scheduler = eval_scheduler
 
         self.global_iter = 0
         self.global_epoch = 0
@@ -125,6 +140,7 @@ class Training(Component):
         """Run a training step over the training data."""
         # Compute the loss
         accumulated_loss = 0.0
+        accumulated_count = 0.0
         for _ in range(self.gradient_accumulation):
             try:
                 batch = next(self._train_iterator)
@@ -133,21 +149,24 @@ class Training(Component):
                 self.global_epoch += 1
                 self._train_iterator = iter(self.train_sampler)
 
-            res = self.model.batch_train(batch)
-            loss = res['loss']
+            loss = self.model.batch_train(batch)
+            accumulated_count += int(loss.size(0))
+            accumulated_loss += loss.sum().item()
 
-            if self.num_gpus > 1:
+            if self.num_gpus > 1 or loss.size(0) > 1:
                 loss = loss.mean()
             if self.gradient_accumulation > 1:
                 loss = loss / self.gradient_accumulation
+                if accumulated_count == 1:
+                    warnings.warn("Loss is a single scalar and \
+                    you are using gradient accumulation. This can result in wrong computation \
+                    of the accumulated loss. If your batch size is 1, you can ignore this warning.")
 
             if self.fp16:
                 with amp.scale_loss(loss, self.optimizer) as scaled_loss:  # type: ignore
                     scaled_loss.backward()
             else:
                 loss.backward()
-
-            accumulated_loss += loss.item()
 
         # Clip gradients if necessary
         if self.fp16:
@@ -159,10 +178,10 @@ class Training(Component):
         if self.max_grad_abs_val:
             clip_grad_value_(parameters, self.max_grad_abs_val)
 
-        # Log everyting
+        # Log everything
         self.global_iter += 1
 
-        log(f'Training/Loss', accumulated_loss, self.global_iter)
+        log(f'Training/Loss', accumulated_loss / accumulated_count, self.global_iter)
         log(f'Training/Gradient_Norm', self.model.gradient_norm, self.global_iter)
         log(f'Training/Parameter_Norm', self.model.parameter_norm, self.global_iter)
 
