@@ -81,14 +81,13 @@ class Model(Module):
         pass
 
     @abstractmethod
-    def batch_train(self, batch: Batch) -> Dict[str, torch.Tensor]:
+    def batch_train(self, batch: Batch) -> torch.Tensor:
         """Compute loss on the given batch.
 
         Given a batch, this method computes a training step
-        by providing the output loss. Should contain a key named
-        ``loss``. This generic interface allows for other stages to
-        require extra keys that can be used for more complex loss
-        computation.
+        by providing the output loss. The loss should be returned
+        as a tensor of size B (i.e batch size). This is to ensure
+        correct computation when using gradient accumulation steps.
 
         ``Important``: this method should *NOT* call the backward
         method, as this is generally done in the object using the model.
@@ -100,7 +99,7 @@ class Model(Module):
 
         Returns
         -------
-        Dict[str, Any]
+        torch.Tensor
             Should contain at least one element being the loss for the
             batch. The recommended default key is ``loss``.
 
@@ -119,8 +118,6 @@ class Model(Module):
         ----------
         batch: Batch
             A batch of data to evaluate. The batch can take any form.
-        global_step: int
-            Global step to use for logging
 
         Returns
         -------
@@ -133,7 +130,7 @@ class Model(Module):
         pass
 
     @abstractmethod
-    def aggregate(self, metrics: Iterable[Dict[str, Any]]) -> Dict[str, float]:
+    def aggregate(self, metrics: Iterable[Dict[str, torch.Tensor]]) -> Dict[str, float]:
         """Aggregate evaluation metrics for the full dataset.
 
         Recieves a list of results where each result is an output of
