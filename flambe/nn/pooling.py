@@ -112,5 +112,6 @@ class AvgPooling(Module):
         if padding_mask is None:
             padding_mask = torch.ones((data.size(0), data.size(1))).to(data)
 
+        value_count = padding_mask.sum(dim=1).unsqueeze(1) * torch.ones((data.size(0), data.size(2)))
         data = (data * padding_mask.unsqueeze(2)).sum(dim=1)
-        return data / padding_mask.sum(dim=1)
+        return data / value_count
