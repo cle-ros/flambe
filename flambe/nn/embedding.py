@@ -214,14 +214,13 @@ class Embeddings(Module):
             The output tensor of shape [S x B x E]
 
         """
-        # print(f"Into embedding {data.size()}")
         out = self.token_embedding(data)
 
         if self.pos_embedding is not None:
             column = torch.arange(data.size(0)).unsqueeze(1)
             positions = column.repeat(1, data.size(1)).to(data)
             out = out + self.pos_embedding(positions)
-        # print(f"Out of embedding {out.size()}")
+
         return out
 
 
