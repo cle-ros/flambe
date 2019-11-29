@@ -109,8 +109,8 @@ class AvgPooling(Module):
         """
         # Apply pooling
         padding_mask = padding_mask or _default_padding_mask(data)
-
-        value_count = padding_mask.sum(dim=1).unsqueeze(1) * torch.ones((data.size(0), data.size(2)))
+        value_count = padding_mask.sum(dim=1).unsqueeze(1) *\
+                      torch.ones((data.size(0), data.size(2)))
         data = _sum_with_padding_mask(data, padding_mask)
         return data / value_count
 
