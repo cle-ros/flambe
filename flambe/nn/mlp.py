@@ -93,4 +93,8 @@ class MLPEncoder(Module):
             output of the model of shape (batch_size, output_size)
 
         """
-        return self.seq(data)
+
+        # print(f"Forwarding MLP {data.size()}")
+        ret = self.seq(data)
+        # print(f"Forwarding MLP out {ret.size()}")
+        return ret

@@ -237,5 +237,6 @@ class TextField(Field):
                 continue
 
             numericals.append(numerical)
-
-        return torch.tensor(numericals).long()
+        to_return = torch.tensor(numericals).long()
+        # print(f"Out of textfield {to_return.size()}")
+        return to_return

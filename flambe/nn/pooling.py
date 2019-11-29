@@ -81,10 +81,9 @@ class SumPooling(Module):
 
         """
         # Apply pooling
-        if padding_mask is None:
-            padding_mask = torch.ones((data.size(0), data.size(1))).to(data)
+        padding_mask = padding_mask or _default_padding_mask(data)
 
-        return (data * padding_mask.unsqueeze(2)).sum(dim=1)
+        return _sum_with_padding_mask(data, padding_mask)
 
 
 class AvgPooling(Module):
@@ -109,9 +108,17 @@ class AvgPooling(Module):
 
         """
         # Apply pooling
-        if padding_mask is None:
-            padding_mask = torch.ones((data.size(0), data.size(1))).to(data)
+        padding_mask = padding_mask or _default_padding_mask(data)
 
-        value_count = padding_mask.sum(dim=1).unsqueeze(1) * torch.ones((data.size(0), data.size(2)))
-        data = (data * padding_mask.unsqueeze(2)).sum(dim=1)
+        value_count = padding_mask.sum(dim=1).unsqueeze(1) * \
+                      torch.ones((data.size(0), data.size(2)))
+        data = _sum_with_padding_mask(data, padding_mask)
         return data / value_count
+
+
+def _default_padding_mask(data):
+    return torch.ones((data.size(0), data.size(1))).to(data)
+
+
+def _sum_with_padding_mask(data, padding_mask):
+    return (data * padding_mask.unsqueeze(2)).sum(dim=1)
