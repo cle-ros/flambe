@@ -12,8 +12,8 @@ def test_avg_pooling():
 
 def test_sum_pooling():
     layer = SumPooling()
-    sum = layer.forward(build_tensor())
-    assert allclose(sum[0], torch.tensor([5, 7, 9], dtype=torch.float32))
+    summation = layer.forward(build_tensor())
+    assert allclose(summation[0], torch.tensor([5, 7, 9], dtype=torch.float32))
 
 
 def build_tensor():
