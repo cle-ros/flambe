@@ -63,6 +63,7 @@ class TextClassification(Training):
                  text_field: Optional[TextField] = None,
                  label_field: Optional[LabelField] = None,
                  embedder: Optional[Embedder] = None,
+                 model: Optional[TextClassifier] = None,
                  **kwargs) -> None:
         """Initalize a TextClassification task.
 
@@ -98,6 +99,8 @@ class TextClassification(Training):
             A custom label field to apply to the label inputs.
         embedder : Optional[Embedder], optional
             A custom embedder. Overrides ``encoder`` and ``pooling``.
+        model : Optional[TextClassifier], optional
+            A custom model. Overrides ``encoder`` and ``embedder``.
 
         See the ``Training`` parent class for other keyword arguments.
 
@@ -123,14 +126,15 @@ class TextClassification(Training):
         self.label_field = label_field
         self.dataset._set_transforms({'text': text_field, 'label': label_field}, do_setup=False)
 
-        if encoder is None and embedder is None:
-            raise ValueError("At least one of encoder or embedder must be provided.")
-        if embedder is None and encoder is not None and pooling is None:
+        if encoder is None and embedder is None and model is None:
+            raise ValueError("At least one of encoder, embedder or model must be provided.")
+        if model is None and embedder is None and encoder is not None and pooling is None:
             raise ValueError("Must provide a pooling stratgey.")
 
         self.encoder = encoder
         self.pooling = pooling
         self.embedder = embedder
+        self._model = model
         self.dropout = dropout
         self.loss_fn = nn.CrossEntropyLoss(reduction='none')
         self.metric_fn = Accuracy()
@@ -141,6 +145,9 @@ class TextClassification(Training):
 
     def build_model(self):
         """Build the model, containing all parameters to train."""
+        if self._model is not None:
+            return self._model
+
         output_size = self.label_field.vocab_size
         if self.embedder is None:
             input_size = self.text_field.vocab_size

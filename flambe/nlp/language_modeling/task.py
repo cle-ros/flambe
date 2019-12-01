@@ -75,6 +75,7 @@ class LanguageModeling(Training):
                  eval_scheduler: Optional[LRScheduler] = None,
                  text_field: Optional[TextField] = None,
                  embedder: Optional[Embedder] = None,
+                 model: Optional[LanguageModel] = None,
                  **kwargs) -> None:
         """Initalize a TextClassification task.
 
@@ -126,6 +127,8 @@ class LanguageModeling(Training):
             A custom text field to apply to the text inputs.
         embedder : Optional[Embedder], optional
             A custom embedder. Overrides ``encoder`` and ``pooling``.
+        model : Optional[Encoder], optional
+            A custom model. Overrides ``encoder`` and ``embedder``.
 
         See the ``Training`` parent class for other keyword arguments.
 
@@ -152,12 +155,13 @@ class LanguageModeling(Training):
 
         self.text_field = text_field
 
-        if encoder is None and embedder is None:
-            raise ValueError("At least one of encoder or embedder must be provided.")
+        if encoder is None and embedder is None and model is None:
+            raise ValueError("At least one of encoder, embedder or model must be provided.")
 
         self.state = None
         self.encoder = encoder
         self.embedder = embedder
+        self._model = model
         self.dropout = dropout
 
         self.ordered = ordered
@@ -175,6 +179,9 @@ class LanguageModeling(Training):
 
     def build_model(self):
         """Build the model, containing all parameters to train."""
+        if self._model is not None:
+            return self._model
+
         input_size = output_size = self.label_field.vocab_size
         if self.embedder is None:
             embedding_dim = self.encoder.input_dim
@@ -185,6 +192,8 @@ class LanguageModeling(Training):
         model = LanguageModel(self.embedder, output_size, self.dropout, self.mixture_of_softmax)
         if self.tie_weights:
             model.embedder.tie_weights(model.output_layer)
+
+        return model
 
     def build_optimizers(self, model):
         """Build the model, containing all parameters to train."""

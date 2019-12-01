@@ -139,6 +139,8 @@ class PrototypicalTextClassification(TextClassification):
 
     def build_model(self):
         """Build the model, containing all parameters to train."""
+        if self._model is not None:
+            return self._model
         if self.embedder is None:
             input_size = self.text_field.vocab_size
             embedding_dim = self.encoder.input_dim
