@@ -7,10 +7,10 @@ from torch import nn
 from torch import Tensor
 
 from flambe.compile import registrable_factory
-from flambe.nn.module import Module
+from flambe.nn.module import Module, Encoder
 
 
-class Embeddings(Module):
+class Embeddings(Encoder):
     """Implement an Embeddings module.
 
     This object replicates the usage of nn.Embedding but
@@ -200,7 +200,31 @@ class Embeddings(Module):
 
         return embedding
 
-    def forward(self, data: Tensor) -> Tensor:
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.num_embeddings
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.embedding_dim
+
+    def forward(self, data: Tensor) -> Tensor:  # type: ignore
         """Perform a forward pass.
 
         Parameters
@@ -224,7 +248,7 @@ class Embeddings(Module):
         return out
 
 
-class Embedder(Module):
+class Embedder(Encoder):
     """Implements an Embedder module.
 
     An Embedder takes as input a sequence of index tokens,
@@ -246,8 +270,8 @@ class Embedder(Module):
     """
 
     def __init__(self,
-                 embedding: Module,
-                 encoder: Module,
+                 embedding: Embeddings,
+                 encoder: Encoder,
                  pooling: Optional[Module] = None,
                  embedding_dropout: float = 0,
                  padding_idx: Optional[int] = 0) -> None:
@@ -257,7 +281,7 @@ class Embedder(Module):
 
         Parameters
         ----------
-        embedding: nn.Embedding
+        embedding: Embeddings
             The embedding layer
         encoder: Module
             The encoder
@@ -278,7 +302,31 @@ class Embedder(Module):
         self.pooling = pooling
         self.padding_idx = padding_idx
 
-    def forward(self, data: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.embedding.input_dim
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.encoder.output_dim
+
+    def forward(self, data: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:  # type: ignore
         """Performs a forward pass through the network.
 
         Parameters

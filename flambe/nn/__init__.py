@@ -1,4 +1,4 @@
-from flambe.nn.module import Module
+from flambe.nn.module import Module, Encoder
 from flambe.nn.softmax import SoftmaxLayer
 from flambe.nn.mos import MixtureOfSoftmax
 from flambe.nn.embedding import Embeddings, Embedder
@@ -11,7 +11,7 @@ from flambe.nn.transformer import Transformer, TransformerEncoder, TransformerDe
 from flambe.nn.transformer_sru import TransformerSRU, TransformerSRUEncoder, TransformerSRUDecoder
 
 
-__all__ = ['Module', 'Embeddings', 'Embedder', 'RNNEncoder',
+__all__ = ['Module', 'Encoder', 'Embeddings', 'Embedder', 'RNNEncoder',
            'PooledRNNEncoder', 'CNNEncoder', 'MLPEncoder',
            'SoftmaxLayer', 'MixtureOfSoftmax', 'Sequential',
            'Transformer', 'TransformerEncoder', 'TransformerDecoder',

@@ -3,10 +3,10 @@ import torch.nn as nn
 from torch import Tensor
 
 from flambe.nn.mlp import MLPEncoder
-from flambe.nn.module import Module
+from flambe.nn.module import Encoder
 
 
-class MixtureOfSoftmax(Module):
+class MixtureOfSoftmax(Encoder):
     """Implement the MixtureOfSoftmax output layer.
 
     Attributes
@@ -36,6 +36,9 @@ class MixtureOfSoftmax(Module):
         """
         super().__init__()
 
+        self.input_size = input_size
+        self.output_size = output_size
+
         self.pi_w = MLPEncoder(input_size, k)
         self.softmax = nn.Softmax()
 
@@ -44,7 +47,31 @@ class MixtureOfSoftmax(Module):
 
         self.activation = nn.LogSoftmax() if take_log else nn.Softmax()
 
-    def forward(self, data: Tensor) -> Tensor:
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.input_size
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.output_size
+
+    def forward(self, data: Tensor) -> Tensor:  # type: ignore
         """Implement mixture of softmax for language modeling.
 
         Parameters

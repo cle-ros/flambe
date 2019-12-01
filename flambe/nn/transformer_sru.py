@@ -5,10 +5,10 @@ import torch
 import torch.nn as nn
 from sru import SRUCell
 
-from flambe.nn import Module
+from flambe.nn.module import Encoder
 
 
-class TransformerSRU(Module):
+class TransformerSRU(Encoder):
     """A Transformer with an SRU replacing the FFN."""
 
     def __init__(self,
@@ -77,6 +77,30 @@ class TransformerSRU(Module):
                                              dropout,
                                              sru_dropout,
                                              **kwargs)
+
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.encoder.input_dim
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.decoder.output_dim
 
     def forward(self,  # type: ignore
                 src: torch.Tensor,
@@ -160,7 +184,7 @@ class TransformerSRU(Module):
         return output
 
 
-class TransformerSRUEncoder(Module):
+class TransformerSRUEncoder(Encoder):
     """A TransformerSRUEncoder with an SRU replacing the FFN."""
 
     def __init__(self,
@@ -223,6 +247,30 @@ class TransformerSRUEncoder(Module):
 
         self._reset_parameters()
 
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.input_size
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.d_model
+
     def forward(self,  # type: ignore
                 src: torch.Tensor,
                 state: Optional[torch.Tensor] = None,
@@ -270,7 +318,7 @@ class TransformerSRUEncoder(Module):
                 nn.init.xavier_uniform_(p)
 
 
-class TransformerSRUDecoder(Module):
+class TransformerSRUDecoder(Encoder):
     """A TransformerSRUDecoderwith an SRU replacing the FFN."""
 
     def __init__(self,
@@ -327,6 +375,30 @@ class TransformerSRUDecoder(Module):
         self.num_layers = num_layers
 
         self._reset_parameters()
+
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.input_size
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.d_model
 
     def forward(self,  # type: ignore
                 tgt: torch.Tensor,
@@ -388,7 +460,7 @@ class TransformerSRUDecoder(Module):
                 nn.init.xavier_uniform_(p)
 
 
-class TransformerSRUEncoderLayer(Module):
+class TransformerSRUEncoderLayer(Encoder):
     """A TransformerSRUEncoderLayer with an SRU replacing the FFN."""
 
     def __init__(self,
@@ -423,7 +495,8 @@ class TransformerSRUEncoderLayer(Module):
         """
         super().__init__()
 
-        self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
+        self.d_model = d_model
+        self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)  # type: ignore
         self.sru = SRUCell(d_model,
                            dim_feedforward,
                            dropout,
@@ -436,6 +509,30 @@ class TransformerSRUEncoderLayer(Module):
         self.norm2 = nn.LayerNorm(d_model)
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
+
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.d_model
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.d_model
 
     def forward(self,  # type: ignore
                 src: torch.Tensor,
@@ -485,7 +582,7 @@ class TransformerSRUEncoderLayer(Module):
         return src, state
 
 
-class TransformerSRUDecoderLayer(Module):
+class TransformerSRUDecoderLayer(Encoder):
     """A TransformerSRUDecoderLayer with an SRU replacing the FFN."""
 
     def __init__(self,
@@ -516,8 +613,9 @@ class TransformerSRUDecoderLayer(Module):
         """
         super().__init__()
 
-        self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
-        self.multihead_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
+        self.d_model = d_model
+        self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)  # type: ignore
+        self.multihead_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)  # type: ignore
         self.sru = SRUCell(d_model,
                            dim_feedforward,
                            dropout,
@@ -532,6 +630,30 @@ class TransformerSRUDecoderLayer(Module):
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
         self.dropout3 = nn.Dropout(dropout)
+
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.d_model
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.d_model
 
     def forward(self,  # type: ignore
                 tgt: torch.Tensor,

@@ -4,10 +4,10 @@ import torch
 from torch import nn
 
 from flambe.nn.mlp import MLPEncoder
-from flambe.nn.module import Module
+from flambe.nn.module import Encoder
 
 
-class SoftmaxLayer(Module):
+class SoftmaxLayer(Encoder):
     """Implement an SoftmaxLayer module.
 
     Can be used to form a classifier out of any encoder.
@@ -51,7 +51,31 @@ class SoftmaxLayer(Module):
                               hidden_activation=mlp_hidden_activation,
                               output_activation=softmax)
 
-    def forward(self, data: torch.Tensor) -> torch.Tensor:
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.mlp.input_dim
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.mlp.output_dim
+
+    def forward(self, data: torch.Tensor) -> torch.Tensor:  # type: ignore
         """Performs a forward pass through the network.
 
         Parameters

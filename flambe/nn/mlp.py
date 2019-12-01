@@ -1,12 +1,12 @@
-from typing import Optional
+from typing import Optional, List
 
 import torch
 import torch.nn as nn
 
-from flambe.nn.module import Module
+from flambe.nn.module import Encoder
 
 
-class MLPEncoder(Module):
+class MLPEncoder(Encoder):
     """Implements a multi layer feed forward network.
 
     This module can be used to create output layers, or
@@ -51,7 +51,7 @@ class MLPEncoder(Module):
         super().__init__()
 
         # Gather the layers in a list to pass to Sequential
-        layers = []
+        layers: List[nn.Module] = []
 
         # Add the hidden_layers
         if n_layers == 1 or hidden_size is None:
@@ -77,9 +77,35 @@ class MLPEncoder(Module):
         if output_activation is not None:
             layers.append(output_activation)
 
+        self.input_size = input_size
+        self.output_size = output_size
         self.seq = nn.Sequential(*layers)
 
-    def forward(self, data: torch.Tensor) -> torch.Tensor:
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.input_size
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.output_size
+
+    def forward(self, data: torch.Tensor) -> torch.Tensor:  # type: ignore
         """Performs a forward pass through the network.
 
         Parameters

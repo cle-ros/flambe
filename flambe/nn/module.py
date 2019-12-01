@@ -1,4 +1,6 @@
+from abc import abstractmethod
 import math
+
 from typing import Iterator, Tuple
 
 import torch.nn as nn
@@ -56,8 +58,8 @@ class Module(Component, nn.Module):
 
         """
         # Only compute over parameters that are being trained
-        parameters = filter(lambda p: p.requires_grad and p.grad is not None, self.parameters())
-        norm = math.sqrt(sum([param.grad.norm(p=2).item() ** 2 for param in parameters]))
+        params = filter(lambda p: p.requires_grad and p.grad is not None, self.parameters())
+        norm = math.sqrt(sum([p.grad.norm(p=2).item() ** 2 for p in params]))  # type: ignore
 
         return norm
 
@@ -72,8 +74,8 @@ class Module(Component, nn.Module):
 
         """
         # Only compute over parameters that are being trained
-        parameters = filter(lambda p: p.requires_grad, self.parameters())
-        norm = math.sqrt(sum([param.norm(p=2).item() ** 2 for param in parameters]))
+        params = filter(lambda p: p.requires_grad, self.parameters())
+        norm = math.sqrt(sum([p.norm(p=2).item() ** 2 for p in params]))
 
         return norm
 
@@ -92,7 +94,7 @@ class Module(Component, nn.Module):
         else:
             model_params = list(self.parameters())
 
-        return(sum([len(x.view(-1)) for x in model_params]))
+        return(sum([p.view(-1).size(0) for p in model_params]))
 
     def clip_params(self, threshold: float):
         """Clip the parameters to the given range.
@@ -120,3 +122,44 @@ class Module(Component, nn.Module):
         # Only compute over parameters that are being trained
         parameters = filter(lambda p: p.requires_grad and p.grad is not None, self.parameters())
         nn.utils.clip_grad_norm_(parameters, threshold)
+
+
+class Encoder(Module):
+    """A simple interface providing the input and output dimensions.
+
+    This class may be expanded in the future to perform type checking
+    on input, output dimensions as well as the number of dimensions.
+    The interface currently requires implementing two methods:
+
+    -  ``input_dim``:
+        The size of the last dimensions of an input
+    -  ``output_dim``:
+        The size of the last dimensions of an output
+
+    """
+
+    @abstractmethod
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        pass
+
+    @abstractmethod
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        pass

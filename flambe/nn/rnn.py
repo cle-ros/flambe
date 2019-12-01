@@ -1,17 +1,14 @@
 from typing import Optional, Tuple, cast
 import warnings
-import logging
 
 import torch
 from torch import nn
 from torch import Tensor
 
-from flambe.nn.module import Module
-
-logger = logging.getLogger(__name__)
+from flambe.nn.module import Encoder
 
 
-class RNNEncoder(Module):
+class RNNEncoder(Encoder):
     """Implements a multi-layer RNN.
 
     This module can be used to create multi-layer RNN models, and
@@ -83,9 +80,9 @@ class RNNEncoder(Module):
         self.enforce_sorted = enforce_sorted
         if rnn_type in ['lstm', 'gru']:
             if kwargs:
-                logger.warn(f"The following '{kwargs}' will be ignored " +
-                            "as they are only considered when using 'sru' as " +
-                            "'rnn_type'")
+                warnings.warn(f"The following '{kwargs}' will be ignored " +
+                              "as they are only considered when using 'sru' as " +
+                              "'rnn_type'")
 
             rnn_fn = nn.LSTM if rnn_type == 'lstm' else nn.GRU
             self.rnn = rnn_fn(input_size=input_size,
@@ -110,7 +107,31 @@ class RNNEncoder(Module):
         else:
             raise ValueError(f"Unkown rnn type: {rnn_type}, use of of: gru, sru, lstm")
 
-    def forward(self,
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.input_size
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.hidden_size
+
+    def forward(self,  # type: ignore
                 data: Tensor,
                 state: Optional[Tensor] = None,
                 padding_mask: Optional[Tensor] = None) -> Tuple[Tensor, Tensor]:
@@ -143,21 +164,22 @@ class RNNEncoder(Module):
         elif self.rnn_type == 'sru':
             # SRU takes a mask instead of PackedSequence objects
             # Write (1 - mask_t) in weird way for type checking to work
-            output, state = self.rnn(data, state, mask_pad=(-padding_mask + 1).byte())
+            mask_pad = (-padding_mask + 1).byte()
+            output, state = self.rnn(data, state, mask_pad=mask_pad)  # type: ignore
         else:
             # Deal with variable length sequences
             lengths = padding_mask.long().sum(dim=0)
             # Pass through the RNN
             packed = nn.utils.rnn.pack_padded_sequence(data, lengths,
                                                        enforce_sorted=self.enforce_sorted)
-            output, state = self.rnn(packed, state)
+            output, state = self.rnn(packed, state)  # type: ignore
             output, _ = nn.utils.rnn.pad_packed_sequence(output)
 
         # TODO investigate why PyTorch returns type Any for output
         return output.transpose(0, 1).contiguous(), state  # type: ignore
 
 
-class PooledRNNEncoder(Module):
+class PooledRNNEncoder(Encoder):
     """Implement an RNNEncoder with additional pooling.
 
     This class can be used to obtan a single encoded output for
@@ -226,7 +248,7 @@ class PooledRNNEncoder(Module):
                               highway_bias=highway_bias,
                               rescale=rescale)
 
-    def forward(self,
+    def forward(self,  # type: ignore
                 data: Tensor,
                 state: Optional[Tensor] = None,
                 padding_mask: Optional[Tensor] = None) -> Tensor:

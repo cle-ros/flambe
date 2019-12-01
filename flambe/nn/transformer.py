@@ -10,10 +10,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from flambe.nn import Module
+from flambe.nn import Encoder
 
 
-class Transformer(Module):
+class Transformer(Encoder):
     """A Transformer model
 
     User is able to modify the attributes as needed. The architechture
@@ -75,6 +75,30 @@ class Transformer(Module):
                                           dim_feedforward,
                                           num_encoder_layers,
                                           dropout)
+
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.encoder.input_dim
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.decoder.output_dim
 
     def forward(self,  # type: ignore
                 src: torch.Tensor,
@@ -157,7 +181,7 @@ class Transformer(Module):
         return output
 
 
-class TransformerEncoder(Module):
+class TransformerEncoder(Encoder):
     """TransformerEncoder is a stack of N encoder layers."""
 
     def __init__(self,
@@ -207,6 +231,30 @@ class TransformerEncoder(Module):
 
         self._reset_parameters()
 
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.input_size
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.d_model
+
     def forward(self,  # type: ignore
                 src: torch.Tensor,
                 memory: Optional[torch.Tensor] = None,
@@ -248,7 +296,7 @@ class TransformerEncoder(Module):
                 nn.init.xavier_uniform_(p)
 
 
-class TransformerDecoder(Module):
+class TransformerDecoder(Encoder):
     """TransformerDecoder is a stack of N decoder layers"""
 
     def __init__(self,
@@ -294,6 +342,30 @@ class TransformerDecoder(Module):
         self.num_layers = num_layers
 
         self._reset_parameters()
+
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.input_size
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.d_model
 
     def forward(self,  # type: ignore
                 tgt: torch.Tensor,
@@ -348,7 +420,7 @@ class TransformerDecoder(Module):
                 nn.init.xavier_uniform_(p)
 
 
-class TransformerEncoderLayer(Module):
+class TransformerEncoderLayer(Encoder):
     """TransformerEncoderLayer is made up of self-attn and feedforward.
 
     This standard encoder layer is based on the paper "Attention Is
@@ -380,7 +452,9 @@ class TransformerEncoderLayer(Module):
 
         """
         super().__init__()
-        self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
+
+        self.d_model = d_model
+        self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)  # type: ignore
 
         self.dropout = nn.Dropout(dropout)
         self.linear1 = nn.Linear(d_model, dim_feedforward)
@@ -390,6 +464,30 @@ class TransformerEncoderLayer(Module):
         self.norm2 = nn.LayerNorm(d_model)
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
+
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.d_model
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.d_model
 
     def forward(self,  # type: ignore
                 src: torch.Tensor,
@@ -431,7 +529,7 @@ class TransformerEncoderLayer(Module):
         return src
 
 
-class TransformerDecoderLayer(Module):
+class TransformerDecoderLayer(Encoder):
     """A TransformerDecoderLayer.
 
     A TransformerDecoderLayer is made up of self-attn, multi-head-attn
@@ -466,8 +564,9 @@ class TransformerDecoderLayer(Module):
         """
         super().__init__()
 
-        self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
-        self.multihead_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
+        self.d_model = d_model
+        self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)  # type: ignore
+        self.multihead_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)  # type: ignore
 
         self.dropout = nn.Dropout(dropout)
         self.linear1 = nn.Linear(d_model, dim_feedforward)
@@ -479,6 +578,30 @@ class TransformerDecoderLayer(Module):
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
         self.dropout3 = nn.Dropout(dropout)
+
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.d_model
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.d_model
 
     def forward(self,  # type: ignore
                 tgt: torch.Tensor,

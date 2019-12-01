@@ -8,7 +8,7 @@ from flambe.nn import Module
 class FirstPooling(Module):
     """Get the last hidden state of a sequence."""
 
-    def forward(self,
+    def forward(self,  # type: ignore
                 data: torch.Tensor,
                 padding_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """Performs a forward pass.
@@ -32,7 +32,7 @@ class FirstPooling(Module):
 class LastPooling(Module):
     """Get the last hidden state of a sequence."""
 
-    def forward(self,
+    def forward(self,  # type: ignore
                 data: torch.Tensor,
                 padding_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """Performs a forward pass.
@@ -62,7 +62,7 @@ class LastPooling(Module):
 class SumPooling(Module):
     """Get the sum of the hidden state of a sequence."""
 
-    def forward(self,
+    def forward(self,  # type: ignore
                 data: torch.Tensor,
                 padding_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """Performs a forward pass.
@@ -90,7 +90,7 @@ class SumPooling(Module):
 class AvgPooling(Module):
     """Get the average of the hidden state of a sequence."""
 
-    def forward(self,
+    def forward(self,  # type: ignore
                 data: torch.Tensor,
                 padding_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
         """Performs a forward pass.

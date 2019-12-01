@@ -3,13 +3,13 @@ from typing import Optional, Tuple, List, Union
 from torch import nn
 from torch import Tensor
 
-from flambe.nn.module import Module
+from flambe.nn.module import Encoder
 
 
 def conv_block(conv_mod: nn.Module,
                activation: nn.Module,
-               pooling: nn.Module,
                dropout: float,
+               pooling: Optional[nn.Module] = None,
                batch_norm: Optional[nn.Module] = None) -> nn.Module:
     """Return a convolutional block.
 
@@ -17,10 +17,10 @@ def conv_block(conv_mod: nn.Module,
 
     mods = [conv_mod]
 
-    if pooling:
+    if pooling is not None:
         mods.append(pooling)
 
-    if batch_norm is None:
+    if batch_norm is not None:
         mods.append(batch_norm)
 
     mods.append(activation)
@@ -29,7 +29,7 @@ def conv_block(conv_mod: nn.Module,
     return nn.Sequential(*mods)
 
 
-class CNNEncoder(Module):
+class CNNEncoder(Encoder):
     """Implements a multi-layer n-dimensional CNN.
 
     This module can be used to create multi-layer CNN models.
@@ -122,18 +122,44 @@ class CNNEncoder(Module):
                     raise ValueError("Kernel size tuple should have same length as conv_dim")
 
             layer = conv_block(
-                conv(prev_c, c, k, stride, padding),
+                conv(prev_c, c, k, stride, padding),  # type: ignore
                 activation,
-                pooling,
                 dropout,
+                pooling,
                 bn(c)
             )
             layers.append(layer)
             prev_c = c
 
         self.cnn = nn.Sequential(*layers)
+        self.input_channels = input_channels
+        self.output_channels = channels[-1]
 
-    def forward(self, data: Tensor) -> Union[Tensor, Tuple[Tensor, ...]]:
+    @property
+    def input_dim(self) -> int:
+        """Get the size of the last dimension of an input.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an input.
+
+        """
+        return self.input_channels
+
+    @property
+    def output_dim(self) -> int:
+        """Get the size of the last dimension of an output.
+
+        Returns
+        -------
+        int
+            The size of the last dimension of an output.
+
+        """
+        return self.output_channels
+
+    def forward(self, data: Tensor) -> Union[Tensor, Tuple[Tensor, ...]]:  # type: ignore
         """Performs a forward pass through the network.
 
         Parameters

@@ -28,9 +28,9 @@ class Sequential(Module):
             setattr(self, name, module)
             modules.append(module)
 
-        self.seq = torch.nn.Sequential(modules)
+        self.seq = torch.nn.Sequential(modules)  # type: ignore
 
-    def forward(self, data: torch.Tensor) -> torch.Tensor:
+    def forward(self, data: torch.Tensor) -> torch.Tensor:  # type: ignore
         """Performs a forward pass through the network.
 
         Parameters
