@@ -28,7 +28,7 @@ class DistillationLoss(Metric):
             By default, uses Pytorch's ``CrossEntropyLoss``.
 
         """
-        self.objective_fn = objective_fn or torch.nn.CrossEntropyLoss(reduction=None)
+        self.objective_fn = objective_fn or torch.nn.CrossEntropyLoss(reduction='none')
         self.alpha_kl = alpha_kl
         self.temp = temperature
 
@@ -72,7 +72,7 @@ class DistillationLoss(Metric):
 
         # Compute the losses
         student_loss = self.objective_fn(student_logits, targets)
-        kl_loss = F.kl_div(student_pred, teacher_pred, reduction=None)
+        kl_loss = F.kl_div(student_pred, teacher_pred, reduction='none')
 
         loss = (1 - self.alpha_kl) * student_loss + self.alpha_kl * (self.temp ** 2) * kl_loss
         return loss, student_loss, kl_loss
