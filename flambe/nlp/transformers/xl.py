@@ -32,3 +32,9 @@ class TransfoXLEmbedder(TransformerEmbedder):
     """
 
     _cls = pt.TransfoXLModel
+
+    def tie_weights(self, linear):
+        """Tie the embedding weights to the given layer."""
+        raise NotImplementedError("Weight tying not yet supported for the TransfoXLEmbedder. " +
+                                  "Consider using the TransfoXLLMHeadModel object from the " +
+                                  "transformers library.")

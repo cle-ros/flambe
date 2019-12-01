@@ -34,3 +34,7 @@ class XLNetEmbedder(TransformerEmbedder):
     """
 
     _cls = pt.XLNetModel
+
+    def tie_weights(self, linear):
+        """Tie the embedding weights to the given layer."""
+        linear.weight = self._embedder.word_embedding.weight

@@ -56,3 +56,7 @@ class BertEmbedder(TransformerEmbedder):
     """
 
     _cls = pt.BertModel
+
+    def tie_weights(self, linear):
+        """Tie the embedding weights to the given layer."""
+        linear.weight = self._embedder.embeddings.word_embeddings.weigh

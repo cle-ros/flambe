@@ -36,3 +36,7 @@ class RobertaEmbedder(TransformerEmbedder):
     """
 
     _cls = pt.RobertaModel
+
+    def tie_weights(self, linear):
+        """Tie the embedding weights to the given layer."""
+        linear.weight = self._embedder.embeddings.word_embeddings.weight

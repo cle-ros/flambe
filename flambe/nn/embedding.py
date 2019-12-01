@@ -224,6 +224,17 @@ class Embeddings(Encoder):
         """
         return self.embedding_dim
 
+    def tie_weights(self, linear: nn.Linear):
+        """Tie the embedding weights to the given layer.
+
+        Parameters
+        ----------
+        linear: nn.Linear
+            A Pytorch linear layer.
+
+        """
+        linear.weight = self.token_embedding.weight
+
     def forward(self, data: Tensor) -> Tensor:  # type: ignore
         """Perform a forward pass.
 
@@ -325,6 +336,17 @@ class Embedder(Encoder):
 
         """
         return self.encoder.output_dim
+
+    def tie_weights(self, linear: nn.Linear):
+        """Tie the embedding weights to the given layer.
+
+        Parameters
+        ----------
+        linear: nn.Linear
+            A Pytorch linear layer.
+
+        """
+        self.embedding.tie_weights(linear)
 
     def forward(self, data: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:  # type: ignore
         """Performs a forward pass through the network.

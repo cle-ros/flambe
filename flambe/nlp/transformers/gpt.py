@@ -33,6 +33,10 @@ class GPTEmbedder(TransformerEmbedder):
 
     _cls = pt.OpenAIGPTModel
 
+    def tie_weights(self, linear):
+        """Tie the embedding weights to the given layer. """
+        linear.weight = self._embedder.tokens_embed.weight
+
 
 class GPT2TextField(TransformerTextField):
     """Integrate the pytorch_transformers GPT2Tokenizer.
@@ -58,3 +62,7 @@ class GPT2Embedder(TransformerEmbedder):
     """
 
     _cls = pt.GPT2Model
+
+    def tie_weights(self, linear):
+        """Tie the embedding weights to the given layer. """
+        linear.weight = self._embedder.wte.weight

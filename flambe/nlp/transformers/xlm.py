@@ -46,3 +46,7 @@ class XLMEmbedder(TransformerEmbedder):
     """
 
     _cls = pt.XLMModel
+
+    def tie_weights(self, linear):
+        """Tie the embedding weights to the given layer."""
+        linear.weight = self._embedder.embeddings.weight

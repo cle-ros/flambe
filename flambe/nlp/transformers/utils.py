@@ -111,7 +111,12 @@ class TransformerEmbedder(Module):
         self.padding_idx = padding_idx
         self.pool = pool
 
-    def forward(self,
+    def tie_weights(self, linear):
+        """Tie the embedding weights to the given layer."""
+        raise NotImplementedError
+        linear.weight = self._embedder.embeddings.word_embeddings.weight
+
+    def forward(self,  # type: ignore
                 data: torch.Tensor,
                 token_type_ids: Optional[torch.Tensor] = None,
                 attention_mask: Optional[torch.Tensor] = None,
