@@ -1,4 +1,4 @@
-from flambe.nlp.fewshot.model import PrototypicalTextClassifier
+from flambe.nlp.fewshot.prototypical import PrototypicalTextClassification
 
 
-__all__ = ['PrototypicalTextClassifier']
+__all__ = ['PrototypicalTextClassification']

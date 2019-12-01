@@ -113,14 +113,15 @@ class TextClassification(Training):
             text_field.setup(text)
             label_field.setup(label)
 
-        self.dataset = dataset
         self.embedding_args = embedding_args or dict()
 
         self.train_batch_size = train_batch_size
         self.val_batch_size = val_batch_size
 
+        self.dataset = dataset
         self.text_field = text_field
         self.label_field = label_field
+        self.dataset._set_transforms({'text': text_field, 'label': label_field}, do_setup=False)
 
         if encoder is None and embedder is None:
             raise ValueError("At least one of encoder or embedder must be provided.")
@@ -169,11 +170,8 @@ class TextClassification(Training):
 
     def sample_batches(self, split='train', train=True):
         """Get an iterable of batches of data."""
-        self.dataset.add_feature_hook('text', self.text_field, columns=0)
-        self.dataset.add_feature_hook('label', self.label_field, columns=1)
-
         batch_size = self.train_batch_size if train else self.val_batch_size
-        return BaseSampler(self.dataset, suffle=train, batch_size=batch_size)
+        return BaseSampler(getattr(dataset, split), suffle=train, batch_size=batch_size)
 
     def train_step(self, model, batch):
         """Compute loss on the given batch during training."""

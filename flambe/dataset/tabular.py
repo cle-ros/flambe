@@ -217,7 +217,9 @@ class TabularDataset(Dataset):
         self.val_view: Optional[DataView] = None
         self.test_view: Optional[DataView] = None
 
-    def _set_transforms(self, transform: Dict[str, Union[Field, Dict]]) -> None:
+    def _set_transforms(self,
+                        transform: Dict[str, Union[Field, Dict]],
+                        do_setup: bool = True) -> None:
         """Set transformations attributes and hooks to the data splits.
 
         This method adds attributes for each field in the transform
@@ -271,12 +273,13 @@ class TabularDataset(Dataset):
                     )
 
             setattr(self, name, field)
-            args = [self._train[:, columns]]
-            if self._val is not None:
-                args.append(self._val[:, columns])
-            if self._test is not None:
-                args.append(self._test[:, columns])
-            field.setup(*args)
+            if do_setup:
+                args = [self._train[:, columns]]
+                if self._val is not None:
+                    args.append(self._val[:, columns])
+                if self._test is not None:
+                    args.append(self._test[:, columns])
+                field.setup(*args)
             self.transform_hooks.append((field, columns))
 
     @registrable_factory

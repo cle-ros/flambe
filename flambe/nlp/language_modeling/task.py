@@ -5,10 +5,12 @@ import torch.nn as nn
 from flambe.dataset import TabularDataset
 from flambe.nn import Encoder, Embedder, Embeddings, MixtureOfSoftmax
 from flambe.metric import Perplexity, BPC
+from flambe.sampler import BaseSampler
 from flambe.field import TextField
 from flambe.task import Training
 from flambe.optim.optimizer import Optimizer
 from flambe.optim.lr_scheduler import LRScheduler
+from flambe.nlp.language_modeling.sampler import CorpusSampler
 
 
 class LanguageModel(Encoder):
@@ -138,6 +140,9 @@ class LanguageModeling(Training):
             text_field.setup(text)
 
         self.dataset = dataset
+        self.text_field = text_field
+        self.dataset._set_transforms({'text': self.text_field})
+
         self.embedding_args = embedding_args or dict()
 
         self.train_batch_size = train_batch_size
@@ -201,15 +206,13 @@ class LanguageModeling(Training):
 
     def sample_batches(self, split='train', train=True):
         """Get an iterable of batches of data."""
-        self.dataset.add_feature_hook('text', self.text_field, columns=0)
-        self.dataset.add_feature_hook('label', self.label_field, columns=1)
-
         batch_size = self.train_batch_size if train else self.val_batch_size
+        data = getattr(self.dataset, split)
         if self.ordered:
             unroll_size = self.train_unroll_size if train else self.val_unroll_size
-            return CorpusSampler(self.dataset, unroll_size=unroll_size, batch_size=batch_size)
+            return CorpusSampler(data, unroll_size=unroll_size, batch_size=batch_size)
         else:
-            return BaseSampler(self.dataset, shuffle=train, batch_size=batch_size)
+            return BaseSampler(data, shuffle=train, batch_size=batch_size)
 
     def batch_compute(self, batch):
         source = batch[0][:, :-1]
