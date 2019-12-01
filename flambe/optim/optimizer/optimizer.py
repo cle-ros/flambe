@@ -5,7 +5,7 @@ import torch
 from flambe import Component
 
 
-class Optimizer(Component):
+class Optimizer(Component, torch.optim.optimizer.Optimizer):
     """Adapter to the Pytorch Optimizer class.
 
     This object allows an optimizer to be instantiated without

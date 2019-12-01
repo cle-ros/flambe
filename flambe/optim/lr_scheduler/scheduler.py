@@ -1,12 +1,12 @@
 from typing import Type
 
-import torch
+from torch.optim import lr_scheduler
 from flambe.compile import Component
 
 
-class LRScheduler(Component):
+class LRScheduler(Component, lr_scheduler._LRScheduler):
 
-    _cls: Type[torch.optim.lr_scheduler._LRScheduler]
+    _cls: Type[lr_scheduler._LRScheduler]
 
     def __init__(self, optimizer=None, **kwargs):
         self.initialized = False
@@ -32,37 +32,37 @@ class LRScheduler(Component):
         return state_dict
 
 
-class LambdaLR(LRScheduler):
-    _cls = torch.optim.lr_scheduler.LambdaLR
+class LambdaLR(LRScheduler, lr_scheduler.LambdaLR):
+    _cls = lr_scheduler.LambdaLR
 
 
-class StepLR(LRScheduler):
-    _cls = torch.optim.lr_scheduler.StepLR
+class StepLR(LRScheduler, lr_scheduler.StepLR):
+    _cls = lr_scheduler.StepLR
 
 
-class MultiStepLR(LRScheduler):
-    _cls = torch.optim.lr_scheduler.MultiStepLR
+class MultiStepLR(LRScheduler, lr_scheduler.MultiStepLR):
+    _cls = lr_scheduler.MultiStepLR
 
 
-class ExponentialLR(LRScheduler):
-    _cls = torch.optim.lr_scheduler.ExponentialLR
+class ExponentialLR(LRScheduler, lr_scheduler.ExponentialLR):
+    _cls = lr_scheduler.ExponentialLR
 
 
-class CosineAnnealingLR(LRScheduler):
-    _cls = torch.optim.lr_scheduler.CosineAnnealingLR
+class CosineAnnealingLR(LRScheduler, lr_scheduler.CosineAnnealingLR):
+    _cls = lr_scheduler.CosineAnnealingLR
 
 
-class ReduceLROnPlateau(LRScheduler):
-    _cls = torch.optim.lr_scheduler.ReduceLROnPlateau  # type: ignore
+class ReduceLROnPlateau(LRScheduler, lr_scheduler.ReduceLROnPlateau):  # type: ignore
+    _cls = lr_scheduler.ReduceLROnPlateau  # type: ignore
 
 
-class CyclicLR(LRScheduler):
-    _cls = torch.optim.lr_scheduler.CyclicLR
+class CyclicLR(LRScheduler, lr_scheduler.CyclicLR):
+    _cls = lr_scheduler.CyclicLR
 
 
-class OneCycleLR(LRScheduler):
-    _cls = torch.optim.lr_scheduler.OneCycleLR  # type: ignore
+class OneCycleLR(LRScheduler, lr_scheduler.OneCycleLR):  # type: ignore
+    _cls = lr_scheduler.OneCycleLR  # type: ignore
 
 
-class CosineAnnealingWarmRestarts(LRScheduler):
-    _cls = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts
+class CosineAnnealingWarmRestarts(LRScheduler, lr_scheduler.CosineAnnealingWarmRestarts):
+    _cls = lr_scheduler.CosineAnnealingWarmRestarts
