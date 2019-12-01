@@ -1,5 +1,5 @@
 from flambe.nlp.classification.datasets import SSTDataset, TRECDataset, NewsGroupDataset
-from flambe.nlp.classification.model import TextClassifier
+from flambe.nlp.classification.task import TextClassification
 
 
-__all__ = ['TextClassifier', 'SSTDataset', 'TRECDataset', 'NewsGroupDataset']
+__all__ = ['TextClassification', 'SSTDataset', 'TRECDataset', 'NewsGroupDataset']

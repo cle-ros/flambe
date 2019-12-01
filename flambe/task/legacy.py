@@ -10,11 +10,32 @@ from torch.nn.utils.clip_grad import clip_grad_norm_, clip_grad_value_
 
 from flambe.dataset import Dataset
 from flambe.compile import Schema, State, Component
-from flambe.learn.utils import select_device
 from flambe.nn import Module
 from flambe.sampler import Sampler, BaseSampler
 from flambe.metric import Metric
 from flambe.logging import log
+
+
+def select_device(device: Optional[str]) -> str:
+    """
+    Chooses the torch device to run in.
+
+     Parameters
+       ------------
+     device: Union[torch.device, str]
+         A device or a string representing a device, such as 'cpu'
+
+     Returns
+     ---------
+     str
+         the passed-as-parameter device if any, otherwise
+         cuda if available. Last option is cpu.
+    """
+
+    if device is not None:
+        return device
+    else:
+        return "cuda" if torch.cuda.is_available() else "cpu"
 
 
 class Trainer(Component):
@@ -271,7 +292,7 @@ class Trainer(Component):
         sign = (-1)**(self.lower_is_better)
         if self._best_metric is None or (sign * val_metric > sign * self._best_metric):
             self._best_metric = val_metric
-            self._best_model = deepcopy(self.model.state_dict())
+            self._best_model = deepcopy(self.model.state_dict())  # type: ignore
 
         # Update scheduler
         if self.scheduler is not None:
@@ -311,7 +332,7 @@ class Trainer(Component):
         continue_ = self._step < self.max_steps
         if not continue_:
             self._eval_step()
-            self.model.load_state_dict(self._best_model)
+            self.model.load_state_dict(self._best_model)  # type: ignore
 
         return continue_
 
@@ -349,7 +370,7 @@ class Trainer(Component):
         # Useful when loading the model after training
         done = self._step >= self.max_steps
         if done:
-            self.model.load_state_dict(self._best_model)
+            self.model.load_state_dict(self._best_model)  # type: ignore
 
     @classmethod
     def precompile(cls, **kwargs):

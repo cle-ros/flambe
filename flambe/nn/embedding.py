@@ -348,13 +348,18 @@ class Embedder(Encoder):
         """
         self.embedding.tie_weights(linear)
 
-    def forward(self, data: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:  # type: ignore
+    def forward(self,  # type: ignore
+                data: Tensor,
+                state: Optional[Tensor] = None
+                ) -> Union[Tensor, Tuple[Tensor, Tensor]]:
         """Performs a forward pass through the network.
 
         Parameters
         ----------
         data : torch.Tensor
             The input data, as a float tensor of shape [S x B]
+        state: torch.Tensor
+            A state tensor to pass to the encoder
 
         Returns
         -------
@@ -369,10 +374,16 @@ class Embedder(Encoder):
         padding_mask: Optional[Tensor]
         if self.padding_idx is not None:
             padding_mask = (data != self.padding_idx).byte()
-            encoding = self.encoder(embedded, padding_mask=padding_mask)
+            if state is not None:
+                encoding = self.encoder(embedded, state=state, padding_mask=padding_mask)
+            else:
+                encoding = self.encoder(embedded, padding_mask=padding_mask)
         else:
             padding_mask = None
-            encoding = self.encoder(embedded)
+            if state is not None:
+                encoding = self.encoder(embedded, state=state)
+            else:
+                encoding = self.encoder(embedded)
 
         if self.pooling is not None:
             # Ignore states from encoders such as RNN or TransformerSRU

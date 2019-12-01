@@ -4,13 +4,13 @@ import runpy
 from copy import deepcopy
 
 from flambe.logging import get_trial_dir
-from flambe.compile import Component
+from flambe.task.task import Task
 
 
-class Script(Component):
-    """Implement a Script computable.
+class Script(Task):
+    """Implement a Script task.
 
-    The obejct can be used to turn any script into a Flambé computable.
+    The obejct can be used to turn any script into a Flambé task.
     This is useful when you want to rapidly integrate code. Note
     however that this computable does not enable checkpointing or
     linking to internal components as it does not have any attributes.
@@ -48,13 +48,13 @@ class Script(Component):
         if output_dir_arg is not None:
             self.args[output_dir_arg] = get_trial_dir()
 
-    def run(self) -> bool:
-        """Run the evaluation.
+    def step(self) -> bool:
+        """Execute the script.
 
         Returns
         -------
-        Dict[str, float]
-            Report dictionary to use for logging
+        bool
+            False, as this is a single step execution of the script.
 
         """
         parser_args = {f'--{k}': v for k, v in self.args.items()}
@@ -66,5 +66,20 @@ class Script(Component):
         runpy.run_module(self.script, run_name='__main__', alter_sys=True)
         sys.argv = sys_save
 
-        continue_ = False  # Single step, so don't continue
-        return continue_
+        _continue = False
+        return _continue
+
+    def metric(self) -> Optional[float]:
+        """Override this method to enable scheduling and searching.
+
+        This method is called every call to ``run``, and should return
+        a unique scalar representing the current performance on the
+        task, and to compare against other variants of the task.
+
+        Returns
+        -------
+        Optional[float]
+            The metric to compare different variants of your Component
+
+        """
+        return None

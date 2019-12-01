@@ -21,6 +21,7 @@ class MixtureOfSoftmax(Encoder):
                  input_size: int,
                  output_size: int,
                  k: int = 1,
+                 use_activation: bool = True,
                  take_log: bool = True) -> None:
         """Initialize the MOS layer.
 
@@ -45,7 +46,8 @@ class MixtureOfSoftmax(Encoder):
         self.layers = [MLPEncoder(input_size, output_size) for _ in range(k)]
         self.tanh = nn.Tanh()
 
-        self.activation = nn.LogSoftmax() if take_log else nn.Softmax()
+        if use_activation:
+            self.activation = nn.LogSoftmax() if take_log else nn.Softmax()
 
     @property
     def input_dim(self) -> int:
@@ -89,5 +91,7 @@ class MixtureOfSoftmax(Encoder):
         # Compute k softmax, and combine using above weights
         out = [w[:, :, i] * self.tanh(W(data)) for i, W in enumerate(self.layers)]
         out = torch.cat(out, dim=0).sum(dim=0)
+        if self.use_activation:
+            out = self.activation(out)
 
-        return self.activation(out)
+        return out
