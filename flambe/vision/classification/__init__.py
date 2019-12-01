@@ -1,4 +1,4 @@
 from flambe.vision.classification.datasets import MNISTDataset
-from flambe.vision.classification.model import ImageClassifier
+from flambe.vision.classification.task import ImageClassification, ImageClassifier
 
-__all__ = ['MNISTDataset', 'ImageClassifier']
+__all__ = ['MNISTDataset', 'ImageClassification', 'ImageClassifier']
