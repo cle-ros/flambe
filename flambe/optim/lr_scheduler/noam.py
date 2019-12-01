@@ -1,6 +1,6 @@
 from typing import Optional
 
-import torch
+from torch.optim.optimizer import Optimizer
 
 from flambe.optim.lr_scheduler.scheduler import LambdaLR
 
@@ -15,7 +15,7 @@ class NoamScheduler(LambdaLR):
     """
 
     def __init__(self,
-                 optimizer: Optional[torch.optim.Optimizer] = None,
+                 optimizer: Optional[Optimizer] = None,
                  warmup: int = 100,
                  d_model: int = 768) -> None:
         """Initialize the NoamScheduler.

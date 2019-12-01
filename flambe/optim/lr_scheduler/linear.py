@@ -1,6 +1,6 @@
 from typing import Optional
 
-import torch
+from torch.optim.optimizer import Optimizer
 
 from flambe.optim.lr_scheduler.scheduler import LambdaLR
 
@@ -18,7 +18,7 @@ class WarmupLinearScheduler(LambdaLR):
     """
 
     def __init__(self,
-                 optimizer: Optional[torch.optim.Optimizer] = None,
+                 optimizer: Optional[Optimizer] = None,
                  warmup: int = 100,
                  n_steps: int = 1000) -> None:
         """Initialize the WarmupLinearScheduler.

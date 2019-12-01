@@ -5,7 +5,7 @@ import torch
 from flambe import Component
 
 
-class Optimizer(torch.optim.Optimizer, Component):
+class Optimizer(Component):
     """Adapter to the Pytorch Optimizer class.
 
     This object allows an optimizer to be instantiated without
@@ -14,7 +14,7 @@ class Optimizer(torch.optim.Optimizer, Component):
 
     """
 
-    _cls: Type[torch.optim.Optimizer]
+    _cls: Type[torch.optim.optimizer.Optimizer]
 
     def __init__(self, params=None, **kwargs):
         self.initialized = False
@@ -33,41 +33,41 @@ class Optimizer(torch.optim.Optimizer, Component):
         del self.kwargs
 
 
-class Adam(Optimizer):
+class Adam(Optimizer, torch.optim.Adam):
     _cls = torch.optim.Adam
 
 
-class SGD(Optimizer):
+class SGD(Optimizer, torch.optim.SGD):
     _cls = torch.optim.SGD
 
 
-class AdamW(Optimizer):
+class AdamW(Optimizer, torch.optim.AdamW):
     _cls = torch.optim.AdamW
 
 
-class SparseAdam(Optimizer):
+class SparseAdam(Optimizer, torch.optim.SparseAdam):
     _cls = torch.optim.SparseAdam
 
 
-class Adadelta(Optimizer):
+class Adadelta(Optimizer, torch.optim.Adadelta):
     _cls = torch.optim.Adadelta
 
 
-class Adamax(Optimizer):
+class Adamax(Optimizer, torch.optim.Adamax):
     _cls = torch.optim.Adamax
 
 
-class ASGD(Optimizer):
+class ASGD(Optimizer, torch.optim.ASGD):
     _cls = torch.optim.ASGD
 
 
-class LBFGS(Optimizer):
+class LBFGS(Optimizer, torch.optim.LBFGS):
     _cls = torch.optim.LBFGS
 
 
-class RMSprop(Optimizer):
+class RMSprop(Optimizer, torch.optim.RMSprop):
     _cls = torch.optim.RMSprop
 
 
-class Rprop(Optimizer):
+class Rprop(Optimizer, torch.optim.Rprop):
     _cls = torch.optim.Rprop
