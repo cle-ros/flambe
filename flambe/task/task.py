@@ -19,7 +19,7 @@ class Task(Component):
     """
 
     @abstractmethod
-    def step(self) -> bool:
+    def run(self) -> bool:
         """Run a single computational step.
 
         When used in an experiment, this computational step should

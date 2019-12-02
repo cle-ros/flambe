@@ -48,7 +48,7 @@ class Script(Task):
         if output_dir_arg is not None:
             self.args[output_dir_arg] = get_trial_dir()
 
-    def step(self) -> bool:
+    def run(self) -> bool:
         """Execute the script.
 
         Returns
