@@ -1,5 +1,4 @@
 import math
-from copy import deepcopy
 from typing import Dict, List, Optional, Any, Tuple, Iterator
 
 import torch
@@ -144,7 +143,7 @@ class Trainer(Component):
 
         self._step = 0
         self._best_metric = None
-        self._best_model = None
+        self._best_model: Dict[str, torch.Tensor] = dict()
         self.register_attrs('_step', '_best_metric', '_best_model')
 
         n_epochs = math.ceil(epoch_per_step * max_steps)
@@ -267,7 +266,7 @@ class Trainer(Component):
         sign = (-1)**(self.lower_is_better)
         if self._best_metric is None or (sign * val_metric > sign * self._best_metric):
             self._best_metric = val_metric
-            self._best_model = deepcopy(self.model.state_dict())
+            self._best_model = {k: t.cpu().detach() for k, t in self.model.state_dict().items()}
 
         # Update scheduler
         if self.scheduler is not None:
