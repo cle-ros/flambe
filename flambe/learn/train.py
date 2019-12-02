@@ -209,7 +209,6 @@ class Trainer(Component):
                 if self.max_grad_abs_val:
                     clip_grad_value_(self.model.parameters(), self.max_grad_abs_val)
 
-                # log(f'{tb_prefix}Training/{self.metric_fn}', self.metric_fn(self._aggregate_preds(self.train_sampler.sample(self.dataset.train, 1))).item(), global_step)
                 log(f'{tb_prefix}Training/Loss', accumulated_loss, global_step)
                 log(f'{tb_prefix}Training/Gradient_Norm', self.model.gradient_norm, global_step)
                 log(f'{tb_prefix}Training/Parameter_Norm', self.model.parameter_norm, global_step)
