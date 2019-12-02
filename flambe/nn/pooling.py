@@ -131,7 +131,7 @@ def _default_padding_mask(data: torch.Tensor) -> torch.Tensor:
 
 
 def _sum_with_padding_mask(data: torch.Tensor,
-                           padding_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+                           padding_mask: torch.Tensor) -> torch.Tensor:
     """
     Applies padding_mask and performs summation over the data
 
