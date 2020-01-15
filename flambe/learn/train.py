@@ -172,6 +172,22 @@ class Trainer(Component):
 
     def _compute_loss(self, batch: Tuple[torch.Tensor, ...]) -> torch.Tensor:
         """Compute the loss given a single batch
+        DEPRECATED, only exists for legacy compatibility with custom trainers
+        Parameters
+        ----------
+        batch: Tuple[torch.Tensor, ...]
+            The batch to train on.
+
+        """
+        print('Warning: flambe.learn.train.Trainer._compute_loss is deprecated. '
+              'Please use flambe.learn.train.Trainer._compute_batch in the future.')
+        batch = self._batch_to_device(batch)
+        pred, target = self.model(*batch)
+        loss = self.loss_fn(pred, target)
+        return loss
+
+    def _compute_batch(self, batch: Tuple[torch.Tensor, ...]) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Does a model forward pass over a batch, and returns prediction, target and loss.
 
         Parameters
         ----------
@@ -179,9 +195,10 @@ class Trainer(Component):
             The batch to train on.
 
         """
+        batch = self._batch_to_device(batch)
         pred, target = self.model(*batch)
         loss = self.loss_fn(pred, target)
-        return loss
+        return pred, target, loss
 
     def _train_step(self) -> None:
         """Run a training step over the training data."""
@@ -201,11 +218,10 @@ class Trainer(Component):
                     except StopIteration:
                         self._create_train_iterator()
                         batch = next(self._train_iterator)
-                    batch = self._batch_to_device(batch)
 
                     # Compute loss
-                    loss = self._compute_loss(batch) / self.batches_per_iter
-                    accumulated_loss += loss.item()
+                    _, _, loss = self._compute_batch(batch)
+                    accumulated_loss += loss.item() / self.batches_per_iter
                     loss.backward()
 
                 # Log loss
@@ -235,8 +251,8 @@ class Trainer(Component):
             # Zero the gradients when exiting a train step
                 self.optimizer.zero_grad()
 
-    def _aggregate_preds(self, data_iterator: Iterator) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Aggregate the predicitons and targets for the dataset.
+    def _aggregate_preds(self, data_iterator: Iterator) -> Tuple[torch.Tensor, torch.Tensor, float]:
+        """Aggregate the predicitons, targets and mean loss for the dataset.
 
         Parameters
         ----------
@@ -245,20 +261,20 @@ class Trainer(Component):
 
         Returns
         -------
-        Tuple[torch.tensor, torch.tensor]
-            The predictions and targets.
+        Tuple[torch.tensor, torch.tensor, float]
+            The predictions, targets and mean loss.
 
         """
-        preds, targets = [], []
+        preds, targets, loss = [], [], []
         for batch in data_iterator:
-            batch = self._batch_to_device(batch)
-            pred, target = self.model(*batch)
+            pred, target, batch_loss = self._compute_batch(batch)
+            loss.append(batch_loss.item())
             preds.append(pred.cpu())
             targets.append(target.cpu())
-
+        loss = sum(loss)/len(loss)
         preds = torch.cat(preds, dim=0)
         targets = torch.cat(targets, dim=0)
-        return preds, targets
+        return preds, targets, loss
 
     def _eval_step(self) -> None:
         """Run an evaluation step over the validation data."""
@@ -269,8 +285,7 @@ class Trainer(Component):
 
         with torch.no_grad():
 
-            preds, targets = self._aggregate_preds(val_iterator)
-            val_loss = self.loss_fn(preds, targets).item()
+            preds, targets, val_loss = self._aggregate_preds(val_iterator)
             val_metric = self.metric_fn(preds, targets).item()
 
         # Update best model
