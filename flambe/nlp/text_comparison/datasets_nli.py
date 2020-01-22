@@ -6,6 +6,7 @@ import tempfile
 import requests
 from zipfile import ZipFile
 import json
+import csv
 
 from flambe.dataset import TabularDataset
 from flambe.field import Field
@@ -18,6 +19,7 @@ class NLIDataset(TabularDataset, metaclass=abc.ABCMeta):
 
     NAME = None
     URL = None
+    NAMED_COLS = ['text_1', 'text_2', 'label']
 
     def __init__(self,
                  cache: bool = True,
@@ -67,8 +69,7 @@ class NLIDataset(TabularDataset, metaclass=abc.ABCMeta):
         val, _ = self._load_file(dev_path)
         test, _ = self._load_file(test_path)
 
-        named_cols = ['premise', 'hypothesis', 'label']
-        super().__init__(train, val, test, cache, named_cols, transform)
+        super().__init__(train, val, test, cache, self.NAMED_COLS, transform)
 
     @classmethod
     def _load_file(cls,
@@ -91,6 +92,29 @@ class NLIDataset(TabularDataset, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def _get_dataset_files(**kwargs) -> Tuple[str, str, str]:
         pass
+
+
+class GLUEDataset(NLIDataset):
+    @classmethod
+    def _load_file(cls,
+                   path: str,
+                   sep: Optional[str] = '\t',
+                   header: Optional[str] = None,
+                   columns: Optional[Union[List[str], List[int]]] = None,
+                   encoding: Optional[str] = 'utf-8') -> Tuple[List[Tuple], Optional[List[str]]]:
+        """Load data from the given path. This particular implementation uses the GLUE website to download the
+        respective TSV files."""
+        with open(path, 'r') as file:
+            reader = csv.reader(file, dialect='excel-tab')
+            header = next(reader)
+            appendix, tail = (['n/a'], -2) if len(header) == 3 else ([], -3)
+            data = filter(lambda x: len(x) == len(header), reader)
+            data = [[*sample[tail:], *appendix] for sample in data]
+        return data, None
+
+    @staticmethod
+    def _get_dataset_files(variation='basic', **kwargs):
+        return 'train.tsv', 'dev.tsv', 'test.tsv'
 
 
 class SNLIDataset(NLIDataset):
@@ -214,3 +238,47 @@ class SCIDataset(NLIDataset):
             type_str = 'basic'
         print(f'SCI: Using the {type_str} version of the eval dataset.')
         return train_file, dev_file, test_file
+
+
+class WNLIDataset(GLUEDataset):
+    """MultiNLI.
+        See https://www.aclweb.org/anthology/W18-5446/
+        See https://cs.nyu.edu/faculty/davise/papers/WinogradSchemas/WS.html
+    """
+
+    NAME = 'WNLI'
+    URL = "https://firebasestorage.googleapis.com/v0/b/mtl-sentence-representations.appspot.com/" \
+          "o/data%2FWNLI.zip?alt=media&token=068ad0a0-ded7-4bd7-99a5-5e00222e0faf"
+
+
+class QNLIDataset(GLUEDataset):
+    """QNLI.
+        See https://www.aclweb.org/anthology/W18-5446/
+        See https://rajpurkar.github.io/SQuAD-explorer/
+    """
+
+    NAME = 'QNLI'
+    URL = "https://firebasestorage.googleapis.com/v0/b/mtl-sentence-representations.appspot.com/" \
+          "o/data%2FQNLIv2.zip?alt=media&token=6fdcf570-0fc5-4631-8456-9505272d1601"
+
+
+class RTEDataset(GLUEDataset):
+    """MultiNLI.
+        See https://www.aclweb.org/anthology/W18-5446/
+        See https://rajpurkar.github.io/SQuAD-explorer/
+    """
+
+    NAME = 'RTE'
+    URL = "https://firebasestorage.googleapis.com/v0/b/mtl-sentence-representations.appspot.com/" \
+          "o/data%2FRTE.zip?alt=media&token=5efa7e85-a0bb-4f19-8ea2-9e1840f077fb"
+
+
+class QQPDataset(GLUEDataset):
+    """QQP.
+        See https://www.aclweb.org/anthology/W18-5446/
+        See https://www.quora.com/q/quoradata/First-Quora-Dataset-Release-Question-Pairs
+    """
+
+    NAME = 'QQP'
+    URL = "https://firebasestorage.googleapis.com/v0/b/mtl-sentence-representations.appspot.com/" \
+          "o/data%2FQQP.zip?alt=media&token=700c6acf-160d-4d89-81d1-de4191d02cb5"
