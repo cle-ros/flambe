@@ -144,7 +144,11 @@ class MultiNLIDataset(NLIDataset):
     URL = "https://www.nyu.edu/projects/bowman/multinli/multinli_1.0.zip"
 
     @staticmethod
-    def _get_dataset_files(mismatched=False, **kwargs):
+    def _get_dataset_files(variation='basic', **kwargs):
+        if not variation in ('basic', 'matched', 'mismatched'):
+            raise ValueError(f'Only supported variations for MultiNLI are basic/matched and mismatched. '
+                             f'Got {variation}.')
+        mismatched = variation == 'mismatched'
         dev_file = 'multinli_1.0_dev_matched.jsonl' if not mismatched else 'multinli_1.0_dev_mismatched.jsonl'
         print(f'MultiNLI: Using the {"matched" if not mismatched else "mismatched"} version of the eval dataset.')
         return ['multinli_1.0_train.jsonl', dev_file, dev_file]
@@ -184,20 +188,21 @@ class SCIDataset(NLIDataset):
     URL = "https://nlp.stanford.edu/projects/sci/sci_dataset.zip"
 
     @staticmethod
-    def _get_dataset_files(mismatched=False, disjoint=False, nested=False, **kwargs):
-        if sum([mismatched, disjoint, nested]) > 1:
-            raise ValueError('Please specify at most one of mismatched, disjoint or nested mode for SCI.')
-        if mismatched:
+    def _get_dataset_files(variation='basic', **kwargs):
+        if variation not in ('basic', 'joint', 'matched', 'mismatched', 'disjoint', 'nested'):
+            raise ValueError(f'Only supported variations for SCI are basic/joint/matched, mismatched, '
+                             f'disjoint and nested. Got {variation}.')
+        if variation == 'mismatched':
             train_file = 'ci_latest_train_mismatch.json'
             dev_file = 'ci_latest_dev_joint.json'
             test_file = 'ci_latest_test_joint.json'
             type_str = 'mismatched'
-        elif disjoint:
+        elif variation == 'disjoint':
             train_file = 'ci_latest_train_disjoint.json'
             dev_file = 'ci_latest_dev_disjoint.json'
             test_file = 'ci_latest_test_disjoint.json'
             type_str = 'disjoint'
-        elif nested:
+        elif variation == 'nested':
             train_file = 'ci_latest_train_nested.json'
             dev_file = 'ci_latest_dev_nested.json'
             test_file = 'ci_latest_test_nested.json'
