@@ -195,7 +195,7 @@ class TextField(Field):
                         self.vocab[token] = index = index + 1
 
         if self.embeddings is not None:
-            self.embedding_matrix = torch.stack(embeddings_matrix)
+            self.embedding_matrix = torch.cat((self.embedding_matrix, torch.stack(embeddings_matrix)), dim=0)
 
     # TODO update when we add generics
     def process(self, example: str) -> torch.Tensor:  # type: ignore
