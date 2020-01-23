@@ -278,14 +278,6 @@ class Embedder(Module):
         self.pooling = pooling
         self.padding_idx = padding_idx
 
-    @property
-    def output_dim(self):
-        """
-        A property returning the wrapped encoder's output size
-        :return:
-        """
-        return self.encoder.output_dim
-
     def forward(self, data: Tensor) -> Union[Tensor, Tuple[Tensor, Tensor]]:
         """Performs a forward pass through the network.
 
