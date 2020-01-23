@@ -156,14 +156,6 @@ class RNNEncoder(Module):
         # TODO investigate why PyTorch returns type Any for output
         return output.transpose(0, 1).contiguous(), state  # type: ignore
 
-    @property
-    def output_size(self):
-        """
-        A property returning the wrapped RNN's output size
-        :return:
-        """
-        return self.rnn.output_size
-
 
 class PooledRNNEncoder(Module):
     """Implement an RNNEncoder with additional pooling.
@@ -276,11 +268,3 @@ class PooledRNNEncoder(Module):
             raise ValueError(f"Invalid pooling type: {self.pooling}")
 
         return output
-
-    @property
-    def output_size(self):
-        """
-        A property returning the wrapped RNN's output size
-        :return:
-        """
-        return self.rnn.output_size
