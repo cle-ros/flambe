@@ -47,7 +47,7 @@ class NLIDataset(TabularDataset, metaclass=abc.ABCMeta):
         else:
             # downloading and unzipping into tmp folder
             tmp_folder = tempfile.mkdtemp(prefix=f'flambe_{self.NAME}')
-            zip_path = os.path.join(tmp_folder, 'data.zip')
+            zip_path = os.path.join(tmp_folder, f'data.zip')
             data_file = requests.get(self.URL)
             with open(zip_path, 'wb') as outfile:
                 outfile.write(data_file.content)
