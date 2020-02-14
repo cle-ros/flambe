@@ -10,12 +10,21 @@
 
 |
 
-.. image:: https://img.shields.io/circleci/build/github/asappresearch/flambe
-    :target: https://circleci.com/gh/asappresearch/flambe
+.. image:: https://github.com/asappresearch/flambe/workflows/Run%20fast%20tests/badge.svg
+    :target: https://github.com/asappresearch/flambe/actions
+    :alt: Fast tests
+
+.. image:: https://github.com/asappresearch/flambe/workflows/Run%20slow%20tests/badge.svg
+    :target: https://github.com/asappresearch/flambe/actions
+    :alt: Slow tests
 
 .. image:: https://readthedocs.org/projects/flambe/badge/?version=latest
     :target: https://flambe.ai/en/latest/?badge=latest
     :alt: Documentation Status
+
+.. image:: https://badge.fury.io/py/flambe.svg
+    :target: https://badge.fury.io/py/flambe
+    :alt: PyPI version
 
 |
 
