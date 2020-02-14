@@ -3,8 +3,9 @@ import abc
 import os
 import tempfile
 
+from urllib.parse import unquote, urlparse
 import requests
-from zipfile import ZipFile
+import shutil
 import json
 import csv
 
@@ -20,6 +21,7 @@ class NLIDataset(TabularDataset, metaclass=abc.ABCMeta):
     NAME = None
     URL = None
     NAMED_COLS = ['text_1', 'text_2', 'label']
+    SPECIAL_TOKENS = []
 
     def __init__(self,
                  cache: bool = True,
@@ -46,18 +48,26 @@ class NLIDataset(TabularDataset, metaclass=abc.ABCMeta):
                 break
         else:
             # downloading and unzipping into tmp folder
+            # creating tmp folder
             tmp_folder = tempfile.mkdtemp(prefix=f'flambe_{self.NAME}')
-            zip_path = os.path.join(tmp_folder, f'data.zip')
+            # figuring out filename
+            file_name = unquote(urlparse(self.URL).path).split('/')[-1]
+            zip_path = os.path.join(tmp_folder, file_name)
+            # download and write to disk
             data_file = requests.get(self.URL)
             with open(zip_path, 'wb') as outfile:
                 outfile.write(data_file.content)
-            with ZipFile(zip_path, 'r') as zipobj:
-                for zip_info in zipobj.infolist():
-                    if zip_info.filename[-1] == '/':
+            # unzip
+            shutil.unpack_archive(zip_path, tmp_folder)
+            # collect files to flatten folder structure
+            walker = os.walk(tmp_folder)
+            for data in walker:
+                for files in data[2]:
+                    try:
+                        shutil.move(data[0] + os.sep + files, tmp_folder)
+                    except shutil.Error:
+                        # same folder
                         continue
-                    zip_info.filename = os.path.basename(zip_info.filename)
-                    zipobj.extract(zip_info, tmp_folder)
-                # zipobj.extractall(tmp_folder)
 
         # loading each dataset
         file_names = self._get_dataset_files(**kwargs)
@@ -80,12 +90,25 @@ class NLIDataset(TabularDataset, metaclass=abc.ABCMeta):
                    encoding: Optional[str] = 'utf-8') -> Tuple[List[Tuple], Optional[List[str]]]:
         """Load data from the given path."""
         data = []
-        with open(path, 'r') as file:
-            for line in file:
-                sample = json.loads(line.strip())
-                if not sample['gold_label'].strip() in ['entailment', 'neutral', 'contradiction']:
-                    continue
-                data.append((sample['sentence1'], sample['sentence2'], sample['gold_label'].strip()))
+        if path.endswith('jsonl') or path.endswith('json'):
+            with open(path, 'r') as file:
+                for line in file:
+                    sample = json.loads(line.strip())
+                    if not sample['gold_label'].strip() in \
+                           ['entailment', 'neutral', 'contradiction']:
+                        continue
+                    data.append((sample['sentence1'],
+                                 sample['sentence2'],
+                                 sample['gold_label'].strip()))
+        elif path.endswith('tsv'):  # tab-separated table
+            with open(path, 'r') as file:
+                reader = csv.reader(file, dialect='excel-tab')
+                header = next(reader)
+                appendix, tail = (['n/a'], -2) if len(header) == 3 else ([], -3)
+                data = filter(lambda x: len(x) == len(header), reader)
+                data = [[*sample[tail:], *appendix] for sample in data]
+        else:
+            raise ValueError(f'Unrecognized filetype for {os.path.split(path)[-1]}.')
         return data, None
 
     @staticmethod
@@ -95,23 +118,6 @@ class NLIDataset(TabularDataset, metaclass=abc.ABCMeta):
 
 
 class GLUEDataset(NLIDataset):
-    @classmethod
-    def _load_file(cls,
-                   path: str,
-                   sep: Optional[str] = '\t',
-                   header: Optional[str] = None,
-                   columns: Optional[Union[List[str], List[int]]] = None,
-                   encoding: Optional[str] = 'utf-8') -> Tuple[List[Tuple], Optional[List[str]]]:
-        """Load data from the given path. This particular implementation uses the GLUE website to download the
-        respective TSV files."""
-        with open(path, 'r') as file:
-            reader = csv.reader(file, dialect='excel-tab')
-            header = next(reader)
-            appendix, tail = (['n/a'], -2) if len(header) == 3 else ([], -3)
-            data = filter(lambda x: len(x) == len(header), reader)
-            data = [[*sample[tail:], *appendix] for sample in data]
-        return data, None
-
     @staticmethod
     def _get_dataset_files(variation='basic', **kwargs):
         return 'train.tsv', 'dev.tsv', 'test.tsv'
