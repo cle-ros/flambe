@@ -36,7 +36,7 @@ class ConvAI2Dataset(NLIDataset):
 
     NAME = 'ConvAI2'
     URL = 'http://parl.ai/downloads/convai2/convai2_fix_723.tgz'
-    SPECIAL_TOKENS = ['<p1-', '-p1>', '<p2-', '-p2>']
+    EXTRA_TOKENS = ['<p1-', '-p1>', '<p2-', '-p2>']
 
     @staticmethod
     def _get_dataset_files(use_candidates=True, **kwargs):
@@ -142,7 +142,7 @@ class DSCT7Dataset(NLIDataset):
     """
     NAME = 'DSCT7'
     URL = 'http://parl.ai/downloads/dstc7/dstc7.tar.gz'
-    SPECIAL_TOKENS = ['<p1-', '-p1>', '<p2-', '-p2>', '<empty>']
+    EXTRA_TOKENS = ['<p1-', '-p1>', '<p2-', '-p2>', '<empty>']
 
     @staticmethod
     def _get_dataset_files(augmented=False, **kwargs):
@@ -207,8 +207,12 @@ class UbuntuDataset(NLIDataset):
     """
     NAME = 'Ubuntu'
     URL = 'http://parl.ai/downloads/ubuntu/ubuntu.tar.gz'
-    SPECIAL_TOKENS = ['__eot__', '__eou__']
+    EXTRA_TOKENS = ['__eot__', '__eou__']
     NAMED_COLS = ['text_1', 'text_2']
+
+    @staticmethod
+    def extra_tokens_():
+        return ['__eot__', '__eou__']
 
     @staticmethod
     def _get_dataset_files(augmented=False, **kwargs):

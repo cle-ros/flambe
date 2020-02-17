@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union, List
 
 import torch
 from transformers import AutoTokenizer
@@ -64,7 +64,7 @@ class PretrainedTransformerField(Field):
         """
         return len(self._tokenizer)
 
-    def process(self, example: str) -> torch.Tensor:  # type: ignore
+    def process(self, example: str) -> Union[torch.Tensor, List[torch.Tensor]]:  # type: ignore
         """Process an example, and create a Tensor.
 
         Parameters
@@ -78,6 +78,9 @@ class PretrainedTransformerField(Field):
             The processed example, tokenized and numericalized
 
         """
+        # special case of list of examples:
+        if isinstance(example, list) or isinstance(example, tuple):
+            return [self.process(e) for e in example]
         tokens = self._tokenizer.encode(example, add_special_tokens=self.add_special_tokens)
 
         if self.max_len_truncate is not None:

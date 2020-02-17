@@ -21,7 +21,7 @@ class NLIDataset(TabularDataset, metaclass=abc.ABCMeta):
     NAME = None
     URL = None
     NAMED_COLS = ['text_1', 'text_2', 'label']
-    SPECIAL_TOKENS = []
+    EXTRA_TOKENS = []
 
     def __init__(self,
                  cache: bool = True,
@@ -42,14 +42,18 @@ class NLIDataset(TabularDataset, metaclass=abc.ABCMeta):
         # data handling
         # making sure it needs to be downloaded:
         for f in os.listdir(tempfile.gettempdir()):
-            file = os.path.join(tempfile.gettempdir(), f)
-            if os.path.isdir(file) and f.startswith(f'flambe_{self.NAME}'):
-                tmp_folder = file
+            folder = os.path.join(tempfile.gettempdir(), f)
+            if os.path.isdir(folder) and f.startswith(f'flambe_{self.NAME}_'):
+                if len(os.listdir(folder)) == 0:
+                    # empty folder, remove folder
+                    os.removedirs(folder)
+                    continue
+                tmp_folder = folder
                 break
         else:
             # downloading and unzipping into tmp folder
             # creating tmp folder
-            tmp_folder = tempfile.mkdtemp(prefix=f'flambe_{self.NAME}')
+            tmp_folder = tempfile.mkdtemp(prefix=f'flambe_{self.NAME}_')
             # figuring out filename
             file_name = unquote(urlparse(self.URL).path).split('/')[-1]
             zip_path = os.path.join(tmp_folder, file_name)
@@ -130,10 +134,13 @@ class SNLIDataset(NLIDataset):
 
         Cite:
         @inproceedings{snli:emnlp2015,
-            Author = {Bowman, Samuel R. and Angeli, Gabor and Potts, Christopher, and Manning, Christopher D.},
-            Booktitle = {Proceedings of the 2015 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+            Author = {Bowman, Samuel R. and Angeli, Gabor and Potts,
+            Christopher, and Manning, Christopher D.},
+            Booktitle = {Proceedings of the 2015 Conference on Empirical
+            Methods in Natural Language Processing (EMNLP)},
             Publisher = {Association for Computational Linguistics},
-            Title = {A large annotated corpus for learning natural language inference},
+            Title = {A large annotated corpus for learning natural
+            language inference},
             Year = {2015}
         }
     """
@@ -176,21 +183,25 @@ class MultiNLIDataset(NLIDataset):
     @staticmethod
     def _get_dataset_files(variation='basic', **kwargs):
         if not variation in ('basic', 'matched', 'mismatched'):
-            raise ValueError(f'Only supported variations for MultiNLI are basic/matched and mismatched. '
+            raise ValueError(f'Only supported variations for MultiNLI '
+                             f'are basic/matched and mismatched. '
                              f'Got {variation}.')
         mismatched = variation == 'mismatched'
-        dev_file = 'multinli_1.0_dev_matched.jsonl' if not mismatched else 'multinli_1.0_dev_mismatched.jsonl'
-        print(f'MultiNLI: Using the {"matched" if not mismatched else "mismatched"} version of the eval dataset.')
+        dev_file = 'multinli_1.0_dev_matched.jsonl' if not mismatched \
+            else 'multinli_1.0_dev_mismatched.jsonl'
+        print(f'MultiNLI: Using the {"matched" if not mismatched else "mismatched"} '
+              f'version of the eval dataset.')
         return ['multinli_1.0_train.jsonl', dev_file, dev_file]
 
 
 class SCIDataset(NLIDataset):
-    """MultiNLI.
+    """SCI.
         See https://nlp.stanford.edu/projects/sci/
 
         Cite:
         @inproceedings{cases-etal-2019-recursive,
-            title = "Recursive Routing Networks: Learning to Compose Modules for Language Understanding",
+            title = "Recursive Routing Networks: Learning to Compose
+            Modules for Language Understanding",
             author = "Cases, Ignacio  and
               Rosenbaum, Clemens  and
               Riemer, Matthew  and
@@ -203,7 +214,10 @@ class SCIDataset(NLIDataset):
               Jurafsky, Dan  and
               Potts, Christopher  and
               Karttunen, Lauri",
-            booktitle = "Proceedings of the 2019 Conference of the North {A}merican Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers)",
+            booktitle = "Proceedings of the 2019 Conference of the North
+            {A}merican Chapter of the Association for Computational
+            Linguistics: Human Language Technologies,
+            Volume 1 (Long and Short Papers)",
             month = jun,
             year = "2019",
             address = "Minneapolis, Minnesota",
@@ -220,7 +234,8 @@ class SCIDataset(NLIDataset):
     @staticmethod
     def _get_dataset_files(variation='basic', **kwargs):
         if variation not in ('basic', 'joint', 'matched', 'mismatched', 'disjoint', 'nested'):
-            raise ValueError(f'Only supported variations for SCI are basic/joint/matched, mismatched, '
+            raise ValueError(f'Only supported variations for SCI '
+                             f'are basic/joint/matched, mismatched, '
                              f'disjoint and nested. Got {variation}.')
         if variation == 'mismatched':
             train_file = 'ci_latest_train_mismatch.json'
@@ -249,7 +264,7 @@ class SCIDataset(NLIDataset):
 class WNLIDataset(GLUEDataset):
     """MultiNLI.
         See https://www.aclweb.org/anthology/W18-5446/
-        See https://cs.nyu.edu/faculty/davise/papers/WinogradSchemas/WS.html
+        https://cs.nyu.edu/faculty/davise/papers/WinogradSchemas/WS.html
     """
 
     NAME = 'WNLI'
@@ -282,7 +297,8 @@ class RTEDataset(GLUEDataset):
 class QQPDataset(GLUEDataset):
     """QQP.
         See https://www.aclweb.org/anthology/W18-5446/
-        See https://www.quora.com/q/quoradata/First-Quora-Dataset-Release-Question-Pairs
+        See https://www.quora.com/q/quoradata/First-Quora-Dataset-
+        Release-Question-Pairs
     """
 
     NAME = 'QQP'

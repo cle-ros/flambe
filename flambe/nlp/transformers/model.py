@@ -93,13 +93,23 @@ class PretrainedTransformerEmbedder(Module):
         if attention_mask is None and self.padding_idx is not None:
             attention_mask = (data != self.padding_idx).float()
 
-        outputs = self._embedder(data,
-                                 token_type_ids=token_type_ids,
-                                 attention_mask=attention_mask,
-                                 position_ids=position_ids,
-                                 head_mask=head_mask)
+        try:
+            outputs = self._embedder(data,
+                                     token_type_ids=token_type_ids,
+                                     attention_mask=attention_mask,
+                                     position_ids=position_ids,
+                                     head_mask=head_mask)
+        except TypeError as e:
+            if 'forward() got an unexpected keyword argument \'token_type_ids\'' in e.args[0]:
+                # distilbert embedder; different signature
+                outputs = self._embedder(data,
+                                         attention_mask=attention_mask,
+                                         head_mask=head_mask)
+            else:
+                raise e
 
-        output = outputs[0] if not self.pool else outputs[1]
+        # pooling if transformer returns a tuple
+        output = outputs[0] if (not self.pool or len(outputs) == 1) else outputs[1]
         return output
 
     def __getattr__(self, name: str) -> Any:
