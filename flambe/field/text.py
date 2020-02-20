@@ -229,6 +229,9 @@ class TextField(Field):
             # if example is list or tuple of strings
             if isinstance(example, list) or isinstance(example, tuple):
                 example = ' '.join(example)
+            # of if it's a dict
+            elif isinstance(example, dict):
+                example = ' '.join(example.values())
             # Lowercase if requested
             example = example.lower() if self.lower else example
             # Tokenize and add to vocabulary
@@ -298,7 +301,8 @@ class TextField(Field):
             self.vocab, self.embedding_matrix = self._build_embeddings(self.model)
 
     # TODO update when we add generics
-    def process(self, example: str) -> Union[torch.Tensor, List[torch.Tensor]]:  # type: ignore
+    def process(self, example: str) \
+            -> Union[torch.Tensor, List[torch.Tensor], Dict[str, str]]:  # type: ignore
         """Process an example, and create a Tensor.
 
         Parameters
@@ -315,6 +319,9 @@ class TextField(Field):
         # special case of list of examples:
         if isinstance(example, list) or isinstance(example, tuple):
             return [self.process(e) for e in example]
+        elif isinstance(example, dict):
+            return type(example)([(key, self.process(val)) for key, val in example.items()])
+        
         # Lowercase and tokenize
         example = example.lower() if self.lower else example
         tokens = self.tokenizer(example)

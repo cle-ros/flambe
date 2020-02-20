@@ -97,6 +97,55 @@ def test_build_vocab():
     assert field.vocab == vocab
 
 
+def test_build_vocab_list():
+    field = TextField()
+    dummy = [
+        ["justo Praesent luctus", "luctus praesent"],
+        ["justo Praesent luctus", "luctus praesent est"]]
+    field._build_vocab(dummy)
+
+    vocab = {'<pad>': 0, '<unk>': 1, 'justo': 2, 'Praesent': 3,
+             'luctus': 4, 'praesent': 5, 'est': 6}
+    assert field.vocab == vocab
+
+
+def test_build_vocab_dict():
+    field = TextField()
+    dummy = {
+        'text1': "justo Praesent luctus luctus praesent",
+        'text2': "justo Praesent luctus luctus praesent est"}
+    field._build_vocab(dummy)
+
+    vocab = {'<pad>': 0, '<unk>': 1, 'justo': 2, 'Praesent': 3,
+             'luctus': 4, 'praesent': 5, 'est': 6}
+    assert field.vocab == vocab
+
+
+def test_build_vocab_nested_list_in_dict():
+    field = TextField()
+    dummy = {
+        'text1': ["justo Praesent luctus", "luctus praesent"],
+        'text2': ["justo Praesent luctus", "luctus praesent est"]}
+    field._build_vocab(dummy)
+
+    vocab = {'<pad>': 0, '<unk>': 1, 'justo': 2, 'Praesent': 3,
+             'luctus': 4, 'praesent': 5, 'est': 6}
+    assert field.vocab == vocab
+
+
+def test_build_vocab_nested_dict_in_list_in_dict():
+    field = TextField()
+    dummy = [
+        {'text1': "justo Praesent luctus", 'text2': "luctus praesent"},
+        {'text3': ["justo Praesent luctus", "luctus praesent est"]}
+    ]
+    field._build_vocab(dummy)
+
+    vocab = {'<pad>': 0, '<unk>': 1, 'justo': 2, 'Praesent': 3,
+             'luctus': 4, 'praesent': 5, 'est': 6}
+    assert field.vocab == vocab
+
+
 def test_bow_build_vocab():
     field = BoWField(min_freq=2, unk_token='<unk>')
     assert field.vocab == {'<unk>': 0}
