@@ -111,9 +111,9 @@ def test_build_vocab_list():
 
 def test_build_vocab_dict():
     field = TextField()
-    dummy = {
+    dummy = [{
         'text1': "justo Praesent luctus luctus praesent",
-        'text2': "justo Praesent luctus luctus praesent est"}
+        'text2': "justo Praesent luctus luctus praesent est"}]
     field._build_vocab(dummy)
 
     vocab = {'<pad>': 0, '<unk>': 1, 'justo': 2, 'Praesent': 3,
@@ -123,9 +123,9 @@ def test_build_vocab_dict():
 
 def test_build_vocab_nested_list_in_dict():
     field = TextField()
-    dummy = {
+    dummy = [{
         'text1': ["justo Praesent luctus", "luctus praesent"],
-        'text2': ["justo Praesent luctus", "luctus praesent est"]}
+        'text2': ["justo Praesent luctus", "luctus praesent est"]}]
     field._build_vocab(dummy)
 
     vocab = {'<pad>': 0, '<unk>': 1, 'justo': 2, 'Praesent': 3,
@@ -289,6 +289,20 @@ def test_load_embeddings():
     true_embeddings = torch.tensor([[0.9, 0.1, 0.2, 0.3], [0.4, 0.5, 0.6, 0.7]])
     assert len(field.embedding_matrix) == 3
     assert torch.all(torch.eq(field.embedding_matrix[1:3], true_embeddings))
+
+
+def test_load_embeddings_with_extra_tokens():
+    field = TextField.from_embeddings(
+        embeddings="tests/data/dummy_embeddings/test.txt",
+        pad_token=None,
+        unk_init_all=False,
+        additional_vocab_tokens=['<a>', '<b>', '<c>']
+    )
+    dummy = "a test ! <a> <b> "
+    field.setup([dummy])
+    assert '<a>' in field.vocab and '<b>' in field.vocab
+    assert '<c>' not in field.vocab
+    assert field.embedding_matrix[field.vocab['<a>']].size(-1) == 4
 
 
 def test_load_embeddings_legacy():

@@ -57,9 +57,10 @@ def test_nary_auc_full_one_hot():
     """simple base case with one-hot labels"""
     n_classes = 100
     y_pred = np.random.randint(0, 10000, (100, n_classes))
-    y_true = np.random.randint(0, 2, (100, n_classes))
+    y_true = np.zeros((100, n_classes))
+    y_true[np.arange(100), np.random.randint(n_classes)] = 1
     sklearn_score = sklearn.metrics.roc_auc_score(y_true.flatten(), y_pred.flatten())
-    metric_test_case(y_pred, y_true, AUC(), sklearn_score)
+    metric_test_case(torch.tensor(y_pred), torch.tensor(y_true), NAryAUC(), sklearn_score)
 
 
 def test_nary_auc_full_indexed():
@@ -71,7 +72,7 @@ def test_nary_auc_full_indexed():
     y_onehot = np.zeros((100, n_classes))
     y_onehot[np.arange(y_true.size), y_true] = 1
     sklearn_score = sklearn.metrics.roc_auc_score(y_onehot.flatten(), y_pred.flatten())
-    metric_test_case(y_pred, y_true, AUC(), sklearn_score)
+    metric_test_case(torch.tensor(y_pred), torch.tensor(y_true), NAryAUC(), sklearn_score)
 
 
 def test_nary_auc_empty():
@@ -115,21 +116,21 @@ def test_recall_at_k_index_preds():
             [0.9, 0.8, 0.4, 0.1]]),
         torch.tensor(
             [3, 2]),
-        Recall(), 0.5)
+        Recall(2), 0.5)
     metric_test_case(
         torch.tensor([
             [0.1, 0.2, 0.3, 0.4],
             [0.9, 0.8, 0.4, 0.1]]),
         torch.tensor(
-            [3, 0]),
-        Recall(), 1)
+            [3, 1]),
+        Recall(2), 1)
     metric_test_case(
         torch.tensor([
             [0.1, 0.2, 0.3, 0.4],
             [0.9, 0.8, 0.4, 0.1]]),
         torch.tensor(
             [1, 2]),
-        Recall(), 0)
+        Recall(2), 0)
 
 
 def test_recall_at_k_class_preds():
@@ -141,25 +142,25 @@ def test_recall_at_k_class_preds():
             [0.1, 0.2, 0.3, 0.4],
             [0.9, 0.8, 0.4, 0.1]]),
         torch.tensor([
-            [0.1, 0.2, 0.3, 0.4],
+            [0.1, 0.2, 0.4, 0.3],
             [0.1, 0.2, 0.4, 0.5]]),
-        Recall(), 0.5)
+        Recall(2), 0.5)
     metric_test_case(
         torch.tensor([
             [0.1, 0.2, 0.3, 0.4],
             [0.9, 0.8, 0.4, 0.1]]),
         torch.tensor([
-            [0., 0., 0., 0.1],
+            [0.01, 0.02, 0.2, 0.2],
             [0., 0.8, 0., 0.]]),
-        Recall(), 1)
+        Recall(2), 1)
     metric_test_case(
         torch.tensor([
             [0.1, 0.2, 0.3, 0.4],
             [0.9, 0.8, 0.4, 0.1]]),
         torch.tensor([
-            [0.5, 0., 0., 0.],
-            [0., 0.8, 0.4, 0.1]]),
-        Recall(), 0)
+            [0.5, 0.2, 0.1, 0.],
+            [0., 0.1, 0.4, 0.3]]),
+        Recall(2), 0)
 
 
 def test_aggregation_accuracy():

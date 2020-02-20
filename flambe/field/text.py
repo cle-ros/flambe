@@ -203,6 +203,29 @@ class TextField(Field):
         unique_ids = set(v for k, v in self.vocab.items())
         return len(unique_ids)
 
+    def _flatten_to_str(self, data_sample: Union[List, Tuple, Dict]):
+        """Converts any nested data sample to a str
+
+        Used to build vocabs from complex file structures
+
+        Parameters
+        ----------
+        data_sample: Union[List, Tuple, Dict]
+
+        Returns
+        -------
+        str
+            the flattened version, for vocab building
+        """
+        if isinstance(data_sample, list) or isinstance(data_sample, tuple):
+            return ' '.join(self._flatten_to_str(s) for s in data_sample)
+        elif isinstance(data_sample, dict):
+            return ' '.join(self._flatten_to_str(s) for s in data_sample.values())
+        elif isinstance(data_sample, str):
+            return data_sample
+        else:
+            raise ValueError(f'Cannot process type {type(data_sample)} for vocab building.')
+
     def _build_vocab(self, *data: np.ndarray) -> None:
         """
         Build the vocabulary for this object based on the special
@@ -226,12 +249,7 @@ class TextField(Field):
                 self.vocab[token] = index = index + 1
 
         for example in examples:
-            # if example is list or tuple of strings
-            if isinstance(example, list) or isinstance(example, tuple):
-                example = ' '.join(example)
-            # of if it's a dict
-            elif isinstance(example, dict):
-                example = ' '.join(example.values())
+            example = self._flatten_to_str(example)
             # Lowercase if requested
             example = example.lower() if self.lower else example
             # Tokenize and add to vocabulary
@@ -421,7 +439,8 @@ class TextField(Field):
         if additional_vocab_tokens:
             # noinspection PyTypeChecker
             model.add(additional_vocab_tokens,
-                      np.random.normal(size=(len(additional_vocab_tokens), model.vector_size)))
+                      np.random.normal(size=(len(additional_vocab_tokens),
+                                             model.vector_size)).astype(model.vectors.dtype))
         return cls(
             model=model,
             setup_all_embeddings=setup_all_embeddings,

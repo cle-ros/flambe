@@ -23,7 +23,7 @@ def one_hot(indices: torch.Tensor, width: int) -> torch.Tensor:
         A one-hot representation of the input indices.
     """
     indices = indices.squeeze()
-    return torch.zeros(indices.size(0), width + 1).scatter_(1, indices.unsqueeze(1), 1.)
+    return torch.zeros(indices.size(0), width).scatter_(1, indices.unsqueeze(1), 1.)
 
 
 class AUC(Metric):
@@ -139,8 +139,9 @@ class NAryAUC(AUC):
             The binary targets of shape:
              - numsamples. In this case the elements index into the
                different classes
-             - numsamplex x numclasses. In this case each row
-               has 0/1 values for correct/incorrect classes
+             - numsamplex x numclasses. This implementation only
+               considers the indices of the max values as positive
+               labels
     
         Returns
         -------
@@ -148,11 +149,16 @@ class NAryAUC(AUC):
             The computed AUC
         """
         if pred.numel() == target.numel() == 0:
-            return pred.new_zeros(size=(1, 1)).squeeze()
+            return 0.5 * pred.new_ones(size=(1, 1)).squeeze()
         num_samples, num_classes = pred.shape
         pred_reshaped = pred.reshape(-1)
         if target.numel() == num_samples:
             # target consists of indices
+            target = one_hot(target, num_classes)
+        else:
+            # reconstructing targets to make sure that only
+            # one target is provided by taking the argmax along an axis
+            target = torch.argmax(target, dim=1)
             target = one_hot(target, num_classes)
         target_reshaped = target.reshape(-1)
         if pred_reshaped.size() != target_reshaped.size():
