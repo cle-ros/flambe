@@ -7,6 +7,11 @@ import numpy as np
 from flambe.metric.metric import Metric
 
 
+def one_hot(indices, width):
+    indices = indices.squeeze()
+    return torch.zeros(indices.size(0), width + 1).scatter_(1, indices.unsqueeze(1), 1.)
+
+
 class AUC(Metric):
 
     def __init__(self, max_fpr=1.0):
@@ -73,9 +78,9 @@ class AUC(Metric):
         Parameters
         ----------
         pred : torch.Tensor
-            The model predictions
+            The model predictions of shape numsamples
         target : torch.Tensor
-            The binary targets
+            The binary targets of shape numsamples
 
         Returns
         -------
@@ -104,3 +109,40 @@ class AUC(Metric):
         area = np.trapz(tpr, fpr)
 
         return torch.tensor(area / self.max_fpr).float()
+
+
+class NAryAUC(AUC):
+    """N-Ary AUC for k-way (and not only binary) classification"""
+
+    def compute(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        """Compute AUC at the given max false positive rate.
+    
+        Parameters
+        ----------
+        pred : torch.Tensor
+            The model predictions of shape numsamples x numclasses
+        target : torch.Tensor
+            The binary targets of shape:
+             - numsamples. In this case the elements index into the
+               different classes
+             - numsamplex x numclasses. In this case each row
+               has 0/1 values for correct/incorrect classes
+    
+        Returns
+        -------
+        torch.Tensor
+            The computed AUC
+        """
+        num_samples, num_classes = pred.shape
+        pred_reshaped = pred.reshape(-1)
+        if target.numel() == num_samples:
+            # target consists of indices
+            target = one_hot(target, num_classes)
+        target_reshaped = target.reshape(-1)
+        if pred_reshaped.size() != target_reshaped.size():
+            raise RuntimeError(
+                'Predictions could not be flattened for AUC computation. '
+                'Ensure all batches are the same size '
+                '(hint: try setting `drop_last = True` in Sampler).')
+
+        return super().compute(pred_reshaped, target_reshaped)
