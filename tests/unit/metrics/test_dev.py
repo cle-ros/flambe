@@ -1,11 +1,11 @@
 import pytest
 import torch
-from sklearn.preprocessing import OneHotEncoder
 import sklearn.metrics
 import numpy as np
 
 from flambe.metric import Accuracy, AUC, NAryAUC, Perplexity, BPC, F1
 from flambe.metric import BinaryRecall, BinaryPrecision, BinaryAccuracy
+from flambe.metric import Recall, Rank
 from pytest import approx
 
 NUMERIC_PRECISION = 1e-2
@@ -87,6 +87,79 @@ def test_accuracy():
     """Test random score list."""
     metric_test_case(torch.tensor([[0.1, 0.2], [0.9, 0.1]]), torch.tensor([1, 1]), Accuracy(), 0.5)
     metric_test_case(torch.tensor([[1.0, 0.0], [0.6, 0.4]]), torch.tensor([1, 1]), Accuracy(), 0)
+
+
+def test_recall_at_1_index_preds():
+    """Test random score list."""
+    # recall at 1 is just accuracy
+    # num_class sample dim
+    metric_test_case(torch.tensor([[0.1, 0.2], [0.9, 0.1]]), torch.tensor([1, 1]), Recall(), 0.5)
+    metric_test_case(torch.tensor([[1.0, 0.0], [0.6, 0.4]]), torch.tensor([1, 1]), Recall(), 0)
+
+
+def test_recall_at_1_class_preds():
+    """Test random score list."""
+    # recall at 1 is just accuracy
+    # num_class sample dim
+    metric_test_case(torch.tensor([[0.1, 0.2], [0.9, 0.1]]), torch.tensor([[0.1, 0.5], [0.2, 0.7]]), Recall(), 0.5)
+    metric_test_case(torch.tensor([[1.0, 0.0], [0.6, 0.4]]), torch.tensor([[0.1, 0.5], [0.2, 0.7]]), Recall(), 0)
+
+
+def test_recall_at_k_index_preds():
+    """Test random score list."""
+    # recall at 1 is just accuracy
+    # num_class sample dim
+    metric_test_case(
+        torch.tensor([
+            [0.1, 0.2, 0.3, 0.4],
+            [0.9, 0.8, 0.4, 0.1]]),
+        torch.tensor(
+            [3, 2]),
+        Recall(), 0.5)
+    metric_test_case(
+        torch.tensor([
+            [0.1, 0.2, 0.3, 0.4],
+            [0.9, 0.8, 0.4, 0.1]]),
+        torch.tensor(
+            [3, 0]),
+        Recall(), 1)
+    metric_test_case(
+        torch.tensor([
+            [0.1, 0.2, 0.3, 0.4],
+            [0.9, 0.8, 0.4, 0.1]]),
+        torch.tensor(
+            [1, 2]),
+        Recall(), 0)
+
+
+def test_recall_at_k_class_preds():
+    """Test random score list."""
+    # recall at 1 is just accuracy
+    # num_class sample dim
+    metric_test_case(
+        torch.tensor([
+            [0.1, 0.2, 0.3, 0.4],
+            [0.9, 0.8, 0.4, 0.1]]),
+        torch.tensor([
+            [0.1, 0.2, 0.3, 0.4],
+            [0.1, 0.2, 0.4, 0.5]]),
+        Recall(), 0.5)
+    metric_test_case(
+        torch.tensor([
+            [0.1, 0.2, 0.3, 0.4],
+            [0.9, 0.8, 0.4, 0.1]]),
+        torch.tensor([
+            [0., 0., 0., 0.1],
+            [0., 0.8, 0., 0.]]),
+        Recall(), 1)
+    metric_test_case(
+        torch.tensor([
+            [0.1, 0.2, 0.3, 0.4],
+            [0.9, 0.8, 0.4, 0.1]]),
+        torch.tensor([
+            [0.5, 0., 0., 0.],
+            [0., 0.8, 0.4, 0.1]]),
+        Recall(), 0)
 
 
 def test_aggregation_accuracy():

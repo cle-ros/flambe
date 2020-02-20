@@ -40,7 +40,7 @@ class AUC(Metric):
 
     def __str__(self) -> str:
         """Return the name of the Metric (for use in logging)."""
-        return f'AUC@{self.max_fpr}'
+        return f'{self.__class__.__name__}@{self.max_fpr}'
 
     @staticmethod
     def aggregate(state: dict, *args, **kwargs) -> Dict:
