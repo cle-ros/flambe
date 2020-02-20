@@ -226,6 +226,9 @@ class TextField(Field):
                 self.vocab[token] = index = index + 1
 
         for example in examples:
+            # if example is list or tuple of strings
+            if isinstance(example, list) or isinstance(example, tuple):
+                example = ' '.join(example)
             # Lowercase if requested
             example = example.lower() if self.lower else example
             # Tokenize and add to vocabulary

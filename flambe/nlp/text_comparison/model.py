@@ -54,7 +54,7 @@ class DualTextClassifier(Module):
         self.embedder_2 = embedder_2
         self.output_layer = output_layer
 
-        self.drop = nn.Dropout(dropout)
+        self.drop = nn.Dropout(dropout) if dropout > 0. else nn.Identity()
 
     def forward(self,
                 input_1: Tensor,

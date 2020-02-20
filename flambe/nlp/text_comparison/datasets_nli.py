@@ -20,8 +20,8 @@ class NLIDataset(TabularDataset, metaclass=abc.ABCMeta):
 
     NAME = None
     URL = None
-    NAMED_COLS = ['text_1', 'text_2', 'label']
-    EXTRA_TOKENS = []
+    NAMED_COLS = ('text_1', 'text_2', 'label')
+    EXTRA_TOKENS = None
 
     def __init__(self,
                  cache: bool = True,
@@ -38,40 +38,7 @@ class NLIDataset(TabularDataset, metaclass=abc.ABCMeta):
             Set to true to train on phrases. Defaults to False.
 
         """
-
-        # data handling
-        # making sure it needs to be downloaded:
-        for f in os.listdir(tempfile.gettempdir()):
-            folder = os.path.join(tempfile.gettempdir(), f)
-            if os.path.isdir(folder) and f.startswith(f'flambe_{self.NAME}_'):
-                if len(os.listdir(folder)) == 0:
-                    # empty folder, remove folder
-                    os.removedirs(folder)
-                    continue
-                tmp_folder = folder
-                break
-        else:
-            # downloading and unzipping into tmp folder
-            # creating tmp folder
-            tmp_folder = tempfile.mkdtemp(prefix=f'flambe_{self.NAME}_')
-            # figuring out filename
-            file_name = unquote(urlparse(self.URL).path).split('/')[-1]
-            zip_path = os.path.join(tmp_folder, file_name)
-            # download and write to disk
-            data_file = requests.get(self.URL)
-            with open(zip_path, 'wb') as outfile:
-                outfile.write(data_file.content)
-            # unzip
-            shutil.unpack_archive(zip_path, tmp_folder)
-            # collect files to flatten folder structure
-            walker = os.walk(tmp_folder)
-            for data in walker:
-                for files in data[2]:
-                    try:
-                        shutil.move(data[0] + os.sep + files, tmp_folder)
-                    except shutil.Error:
-                        # same folder
-                        continue
+        tmp_folder = self._download_and_extract_files(**kwargs)
 
         # loading each dataset
         file_names = self._get_dataset_files(**kwargs)
@@ -84,6 +51,46 @@ class NLIDataset(TabularDataset, metaclass=abc.ABCMeta):
         test, _ = self._load_file(test_path)
 
         super().__init__(train, val, test, cache, self.NAMED_COLS, transform)
+
+    @classmethod
+    def _download_and_extract_files(cls, **kwargs):
+        # data handling
+        # making sure it needs to be downloaded:
+        for f in os.listdir(tempfile.gettempdir()):
+            folder = os.path.join(tempfile.gettempdir(), f)
+            if os.path.isdir(folder) and f.startswith(f'flambe_{cls.NAME}_'):
+                if not all([file in os.listdir(folder)
+                            for file in cls._get_dataset_files(**kwargs)]):
+                    # partial download or tmp cleanup, remove folder
+                    shutil.rmtree(folder)
+                    continue
+                tmp_folder = folder
+                break
+        else:
+            # downloading and unzipping into tmp folder
+            # creating tmp folder
+            tmp_folder = tempfile.mkdtemp(prefix=f'flambe_{cls.NAME}_')
+            # figuring out filename
+            file_name = unquote(urlparse(cls.URL).path).split('/')[-1]
+            zip_path = os.path.join(tmp_folder, file_name)
+            # download and write to disk
+            data_file = requests.get(cls.URL)
+            with open(zip_path, 'wb') as outfile:
+                outfile.write(data_file.content)
+            # unzip
+            shutil.unpack_archive(zip_path, tmp_folder)
+            # remove file
+            shutil.rmtree(zip_path)
+            # collect files to flatten folder structure
+            walker = os.walk(tmp_folder)
+            for data in walker:
+                for files in data[2]:
+                    try:
+                        shutil.move(data[0] + os.sep + files, tmp_folder)
+                    except shutil.Error:
+                        # same folder
+                        continue
+        return tmp_folder
 
     @classmethod
     def _load_file(cls,

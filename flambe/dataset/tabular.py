@@ -1,5 +1,5 @@
 import os
-from typing import Optional, List, Tuple, Iterable, Dict, Union, Any
+from typing import Optional, List, Tuple, Iterable, Dict, Union, Any, Sequence
 
 import pandas as pd
 import numpy as np
@@ -145,7 +145,7 @@ class TabularDataset(Dataset):
                  val: Optional[Iterable[Iterable]] = None,
                  test: Optional[Iterable[Iterable]] = None,
                  cache: bool = True,
-                 named_columns: Optional[List[str]] = None,
+                 named_columns: Optional[Sequence[str]] = None,
                  transform: Dict[str, Union[Field, Dict]] = None) -> None:
         """Initialize the TabularDataset.
 
