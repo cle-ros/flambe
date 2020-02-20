@@ -7,7 +7,21 @@ import numpy as np
 from flambe.metric.metric import Metric
 
 
-def one_hot(indices, width):
+def one_hot(indices: torch.Tensor, width: int) -> torch.Tensor:
+    """Converts a list of ints into 1-hot format.
+
+    Parameters
+    ----------
+    indices: torch.Tensor
+        the indices to be converted
+    width: int
+        the width of the 1-hot encoding (= the maximal index value)
+
+    Returns
+    -------
+    torch.Tensor
+        A one-hot representation of the input indices.
+    """
     indices = indices.squeeze()
     return torch.zeros(indices.size(0), width + 1).scatter_(1, indices.unsqueeze(1), 1.)
 
