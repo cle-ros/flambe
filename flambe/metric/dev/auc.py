@@ -147,6 +147,8 @@ class NAryAUC(AUC):
         torch.Tensor
             The computed AUC
         """
+        if pred.numel() == target.numel() == 0:
+            return pred.new_zeros(size=(1, 1)).squeeze()
         num_samples, num_classes = pred.shape
         pred_reshaped = pred.reshape(-1)
         if target.numel() == num_samples:

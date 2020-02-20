@@ -1,9 +1,10 @@
 import pytest
 import torch
+from sklearn.preprocessing import OneHotEncoder
 import sklearn.metrics
 import numpy as np
 
-from flambe.metric import Accuracy, AUC, Perplexity, BPC, F1
+from flambe.metric import Accuracy, AUC, NAryAUC, Perplexity, BPC, F1
 from flambe.metric import BinaryRecall, BinaryPrecision, BinaryAccuracy
 from pytest import approx
 
@@ -52,12 +53,34 @@ def test_auc_empty():
     assert auc(y_pred, y_true).item() == approx(0.5, NUMERIC_PRECISION)
 
 
-def test_nary_auc_full():
-    """different n-ary auc test cases"""
-    y_pred = np.random.randint(0, 10000, 100)
-    y_true = np.random.randint(0, 2, 100)
+def test_nary_auc_full_one_hot():
+    """simple base case with one-hot labels"""
+    n_classes = 100
+    y_pred = np.random.randint(0, 10000, (100, n_classes))
+    y_true = np.random.randint(0, 2, (100, n_classes))
+    sklearn_score = sklearn.metrics.roc_auc_score(y_true.flatten(), y_pred.flatten())
+    metric_test_case(y_pred, y_true, AUC(), sklearn_score)
 
-    metric_test_case(y_pred, y_true, AUC(), sklearn.metrics.roc_auc_score(y_true, y_pred))
+
+def test_nary_auc_full_indexed():
+    """simple base case with index labels"""
+    n_classes = 100
+    y_pred = np.random.randint(0, 10000, (100, n_classes))
+    y_true = np.random.randint(0, n_classes, 100)
+    # one hot conversion
+    y_onehot = np.zeros((100, n_classes))
+    y_onehot[np.arange(y_true.size), y_true] = 1
+    sklearn_score = sklearn.metrics.roc_auc_score(y_onehot.flatten(), y_pred.flatten())
+    metric_test_case(y_pred, y_true, AUC(), sklearn_score)
+
+
+def test_nary_auc_empty():
+    """Should be completely random on an empty list"""
+    y_pred = torch.tensor([])
+    y_true = torch.tensor([])
+
+    auc = NAryAUC()
+    assert auc(y_pred, y_true).item() == approx(0.5, NUMERIC_PRECISION)
 
 
 def test_accuracy():
