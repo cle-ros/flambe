@@ -52,6 +52,14 @@ def test_auc_empty():
     assert auc(y_pred, y_true).item() == approx(0.5, NUMERIC_PRECISION)
 
 
+def test_nary_auc_full():
+    """different n-ary auc test cases"""
+    y_pred = np.random.randint(0, 10000, 100)
+    y_true = np.random.randint(0, 2, 100)
+
+    metric_test_case(y_pred, y_true, AUC(), sklearn.metrics.roc_auc_score(y_true, y_pred))
+
+
 def test_accuracy():
     """Test random score list."""
     metric_test_case(torch.tensor([[0.1, 0.2], [0.9, 0.1]]), torch.tensor([1, 1]), Accuracy(), 0.5)
