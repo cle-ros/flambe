@@ -1,13 +1,13 @@
-from typing import List, Tuple, Optional, Dict, Union
+from typing import List, Tuple, Optional, Union
 import re
 import csv
 import json
 import random
 
-from .datasets_nli import NLIDataset
+from flambe.nlp.common import CompressedDataTabularDataset
 
 
-class ConvAI2Dataset(NLIDataset):
+class ConvAI2Dataset(CompressedDataTabularDataset):
     """ ConvAI2 dataset from the NeurIPS convai challenge
 
     See: http://convai.io/#personachat-convai2-dataset
@@ -102,7 +102,7 @@ class ConvAI2Dataset(NLIDataset):
         return data, None
 
 
-class DSCT7Dataset(NLIDataset):
+class DSCT7Dataset(CompressedDataTabularDataset):
     """Dialog System Technology Challenges 7 (DSTC 7)
 
     Please see
@@ -189,7 +189,7 @@ class DSCT7Dataset(NLIDataset):
         return data, None
 
 
-class UbuntuDataset(NLIDataset):
+class UbuntuDataset(CompressedDataTabularDataset):
     """The Ubuntu dialog corpus
 
     Please see
@@ -197,8 +197,8 @@ class UbuntuDataset(NLIDataset):
 
     Please cite
     @article{lowe2015ubuntu,
-        title={The ubuntu dialogue corpus: A large dataset for research
-        in unstructured multi-turn dialogue systems},
+        title={The ubuntu dialogue_and_ranking corpus: A large dataset for research
+        in unstructured multi-turn dialogue_and_ranking systems},
         author={Lowe, Ryan and Pow, Nissan and Serban, Iulian
         and Pineau, Joelle},
         journal={arXiv preprint arXiv:1506.08909},
