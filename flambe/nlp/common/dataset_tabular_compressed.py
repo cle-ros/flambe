@@ -9,6 +9,7 @@ import requests
 import shutil
 
 from flambe.dataset import TabularDataset
+from flambe.field import Field
 
 
 class CompressedDataTabularDataset(TabularDataset, metaclass=abc.ABCMeta):
@@ -20,6 +21,7 @@ class CompressedDataTabularDataset(TabularDataset, metaclass=abc.ABCMeta):
     NAME = None
     URL = None
     EXTRA_TOKENS = None
+    NAMED_COLS = ('text_1', 'text_2', 'label')
 
     def __init__(self,
                  cache: bool = True,

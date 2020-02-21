@@ -11,8 +11,6 @@ class NLIDataset(CompressedDataTabularDataset, metaclass=abc.ABCMeta):
     The base class for the NLI class of tasks.
     """
 
-    NAMED_COLS = ('text_1', 'text_2', 'label')
-
     @classmethod
     def _load_file(cls,
                    path: str,
