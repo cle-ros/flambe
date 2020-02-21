@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Union, Any
 from collections import OrderedDict as odict
 from itertools import chain
 
@@ -319,7 +319,7 @@ class TextField(Field):
             self.vocab, self.embedding_matrix = self._build_embeddings(self.model)
 
     # TODO update when we add generics
-    def process(self, example: str) \
+    def process(self, example: Union[str, List[Any], Dict[Any, Any]]) \
             -> Union[torch.Tensor, List[torch.Tensor], Dict[str, str]]:  # type: ignore
         """Process an example, and create a Tensor.
 
@@ -338,7 +338,7 @@ class TextField(Field):
         if isinstance(example, list) or isinstance(example, tuple):
             return [self.process(e) for e in example]
         elif isinstance(example, dict):
-            return type(example)([(key, self.process(val)) for key, val in example.items()])
+            return dict([(key, self.process(val)) for key, val in example.items()])
         
         # Lowercase and tokenize
         example = example.lower() if self.lower else example

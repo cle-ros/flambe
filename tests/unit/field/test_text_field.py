@@ -403,3 +403,102 @@ def test_text_process_unk():
     dummy = "justo Praesent luctus justo praesent"
     with pytest.raises(Exception):
         field.process(dummy)
+
+
+def recursive_tensor_to_list(data):
+    if isinstance(data, list):
+        return [recursive_tensor_to_list(d) for d in data]
+    elif isinstance(data, dict):
+        return dict((k, recursive_tensor_to_list(v)) for k, v in data.items())
+    elif isinstance(data, torch.Tensor):
+        return data.tolist()
+
+
+def test_text_process_list():
+    field = TextField(lower=True)
+    field.setup()
+    dummy = [
+        ["justo Praesent luctus", "luctus praesent"],
+        ["justo Praesent luctus", "luctus praesent est"]]
+    assert recursive_tensor_to_list(field.process(dummy)) == [
+        [[1, 1, 1], [1, 1]],
+        [[1, 1, 1], [1, 1, 1]]]
+
+    field.setup(dummy)
+    assert recursive_tensor_to_list(field.process(dummy)) == [
+        [[2, 3, 4], [4, 3]],
+        [[2, 3, 4], [4, 3, 5]]]
+
+
+def test_text_process_dict():
+    field = TextField(lower=True)
+    field.setup()
+    dummy = {
+        'text1': "justo Praesent luctus luctus praesent",
+        'text2': "justo Praesent luctus luctus praesent est"}
+    assert recursive_tensor_to_list(field.process(dummy)) == {
+        'text1': [1, 1, 1, 1, 1],
+        'text2': [1, 1, 1, 1, 1, 1]
+    }
+    field.setup([dummy])
+    assert recursive_tensor_to_list(field.process(dummy)) == {
+        'text1': [2, 3, 4, 4, 3],
+        'text2': [2, 3, 4, 4, 3, 5]
+    }
+
+
+def test_text_process_nested_list_in_dict():
+    field = TextField(lower=True)
+    field.setup()
+    dummy = [{
+        'text1': ["justo Praesent luctus", "luctus praesent"],
+        'text2': ["justo Praesent luctus", "luctus praesent est"]}]
+    assert recursive_tensor_to_list(field.process(dummy)) == [{
+            'text1': [[1, 1, 1], [1, 1]],
+            'text2': [[1, 1, 1], [1, 1, 1]]
+        }]
+    field.setup(dummy)
+    assert recursive_tensor_to_list(field.process(dummy)) == [{
+            'text1': [[2, 3, 4], [4, 3]],
+            'text2': [[2, 3, 4], [4, 3, 5]]
+        }]
+
+
+def test_text_process_nested_dict_in_list_in_dict():
+    field = TextField(lower=True)
+    field.setup()
+    dummy = [
+        {'text1': "justo Praesent luctus", 'text2': "luctus praesent"},
+        {'text3': ["justo Praesent luctus", "luctus praesent est"]}
+    ]
+    assert recursive_tensor_to_list(field.process(dummy)) == [{
+            'text1': [1, 1, 1],
+            'text2': [1, 1]}, {
+            'text3': [[1, 1, 1], [1, 1, 1]]
+        }]
+
+    field.setup(dummy)
+    assert recursive_tensor_to_list(field.process(dummy)) == [{
+            'text1': [2, 3, 4],
+            'text2': [4, 3]}, {
+            'text3': [[2, 3, 4], [4, 3, 5]]
+        }]
+
+
+def test_load_embeddings_with_extra_tokens():
+    field = TextField.from_embeddings(
+        embeddings="tests/data/dummy_embeddings/test.txt",
+        pad_token=None,
+        unk_init_all=False,
+        additional_vocab_tokens=['<a>', '<b>', '<c>']
+    )
+
+    dummy = "this is a test"
+    field.setup([dummy])
+    assert recursive_tensor_to_list(field.process(dummy)) == [1, 2, 3, 4]
+
+    dummy = "this is a test <a>"
+    assert recursive_tensor_to_list(field.process(dummy)) == [1, 2, 3, 4, 0]
+
+    field.setup([dummy])
+    assert recursive_tensor_to_list(field.process(dummy)) == [1, 2, 3, 4, 5]

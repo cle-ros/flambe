@@ -1,4 +1,4 @@
-from typing import Optional, Union, List, Dict
+from typing import Optional, Union, List, Dict, Any
 
 import torch
 from transformers import AutoTokenizer
@@ -66,7 +66,7 @@ class PretrainedTransformerField(Field):
         """
         return len(self._tokenizer)
 
-    def process(self, example: str) \
+    def process(self, example: Union[str, List[Any], Dict[Any, Any]]) \
             -> Union[torch.Tensor, List[torch.Tensor], Dict[str, str]]:  # type: ignore
         """Process an example, and create a Tensor.
 
@@ -85,7 +85,7 @@ class PretrainedTransformerField(Field):
         if isinstance(example, list) or isinstance(example, tuple):
             return [self.process(e) for e in example]
         elif isinstance(example, dict):
-            return type(example)([(key, self.process(val)) for key, val in example.items()])
+            return dict([(key, self.process(val)) for key, val in example.items()])
 
         tokens = self._tokenizer.encode(example, add_special_tokens=self.add_special_tokens)
 
