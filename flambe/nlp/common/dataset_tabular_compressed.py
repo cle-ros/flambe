@@ -80,7 +80,7 @@ class CompressedDataTabularDataset(TabularDataset, metaclass=abc.ABCMeta):
             # unzip
             shutil.unpack_archive(zip_path, tmp_folder)
             # remove file
-            shutil.rmtree(zip_path)
+            os.remove(zip_path)
             # collect files to flatten folder structure
             walker = os.walk(tmp_folder)
             for data in walker:
