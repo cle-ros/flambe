@@ -9,30 +9,34 @@ from flambe.field import Field
 
 class PTBDataset(TabularDataset):
     """The official PTB dataset."""
+
     PTB_URL = "https://raw.githubusercontent.com/yoonkim/lstm-char-cnn/master/data/ptb/"
+
     def __init__(self,  # nosec
                  split_by_line: bool = False,
                  end_of_line_token: Optional[str] = '<eol>',  # nosec
-                 cache: bool = False,
-                 transform: Dict[str, Union[Field, Dict]] = None) -> None:
+                 **kwargs) -> None:
         """Initialize the PTBDataset builtin.
         Parameters
         ----------
-        split_by_sentence: bool, Optional
-            If true, tokenizes per sentence. Default ``False``.
+        split_by_line: bool, Optional
+            If true, tokenizes per line. Default ``False``.
         end_of_line_token: str, Optional
             Token added at the end of every line.
         see TabularDataset for other arguments.
         """
         self.split_by_line = split_by_line
         self.eol = end_of_line_token
+
         train_path = self.PTB_URL + "train.txt"
         val_path = self.PTB_URL + "valid.txt"
         test_path = self.PTB_URL + "test.txt"
+
         train = self._process(requests.get(train_path).content)
         val = self._process(requests.get(val_path).content)
         test = self._process(requests.get(test_path).content)
-        super().__init__(train, val, test, cache=cache, transform=transform)
+
+        super().__init__(train, val, test, **kwargs)
 
     def _process(self, file: bytes) -> List[Tuple[str]]:
         """Process the input file.
